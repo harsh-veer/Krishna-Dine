@@ -1,0 +1,34 @@
+# Render Blueprint for the Krishna Dine API (Socket.IO needs a persistent Node process, which Render web services provide).
+# Dashboard: New > Blueprint > pick this repo. Then set the "sync: false" values in the Render dashboard.
+services:
+  - type: web
+    name: krishna-dine-api
+    runtime: node
+    rootDir: server
+    plan: starter # free tier works for testing but sleeps when idle, which drops kitchen connections
+    region: singapore
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: FORCE_PASSWORD_CHANGE
+        value: "true"
+      - key: TZ_OFFSET_MINUTES
+        value: "330"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: PUBLIC_MENU_URL
+        sync: false
+      - key: PAYMENT_GATEWAY
+        value: none
