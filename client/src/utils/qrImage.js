@@ -1,3 +1,5 @@
+import logoUrl from '../assets/logo.png';
+
 // Builds a print-ready PNG: brand header, the QR code, table number and a short instruction.
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -35,13 +37,18 @@ export async function buildQrCard(table) {
   ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = '#0B3B2E';
   ctx.fillRect(0, 0, W, 230);
+  const logo = await loadImage(logoUrl);
+  ctx.fillStyle = '#FFFFFF';
+  roundRect(ctx, 50, 65, 100, 100, 24);
+  ctx.fill();
+  ctx.drawImage(logo, 55, 70, 90, 90);
   ctx.textAlign = 'center';
   ctx.fillStyle = '#F6EFDF';
   ctx.font = '600 72px Fraunces, Georgia, serif';
-  ctx.fillText('Krishna Dine', W / 2, 120);
+  ctx.fillText('Krishna Dine', W / 2 + 60, 120);
   ctx.fillStyle = '#D6B36A';
-  ctx.font = '600 28px "Plus Jakarta Sans", Arial, sans-serif';
-  ctx.fillText('KRISHNA HOTEL & RESTAURANT · AKBARPUR', W / 2, 180);
+  ctx.font = '600 24px "Plus Jakarta Sans", Arial, sans-serif';
+  ctx.fillText('KRISHNA HOTEL & RESTAURANT · AKBARPUR', W / 2 + 60, 180);
 
   ctx.fillStyle = '#FFFFFF';
   roundRect(ctx, 120, 290, 660, 660, 40);
@@ -53,7 +60,7 @@ export async function buildQrCard(table) {
   ctx.font = '800 96px "Plus Jakarta Sans", Arial, sans-serif';
   ctx.fillText(`Table ${table.tableNumber}`, W / 2, 1080);
   ctx.fillStyle = 'rgba(11,59,46,0.7)';
-  ctx.font = '500 34px "Plus Jakarta Sans", Arial, sans-serif';
+  ctx.font = '500 30px "Plus Jakarta Sans", Arial, sans-serif';
   ctx.fillText('Scan with your phone camera to see the menu and order', W / 2, 1150);
   ctx.font = '500 26px "Plus Jakarta Sans", Arial, sans-serif';
   ctx.fillStyle = 'rgba(11,59,46,0.45)';

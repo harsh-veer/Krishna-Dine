@@ -28,7 +28,7 @@ export default function InvoicePage() {
       </div>
       <div className="mx-auto max-w-[420px] bg-white p-7 font-mono text-[13px] leading-relaxed text-black shadow-lift print:max-w-none print:p-0 print:shadow-none" data-testid="invoice">
         <div className="text-center">
-          <LogoMark className="mx-auto h-12 w-12 print:hidden" />
+          <LogoMark className="mx-auto h-12 w-12" />
           <div className="mt-2 font-sans text-lg font-extrabold">{r.name}</div>
           <div className="text-xs">{r.address}</div>
           {r.phone && <div className="text-xs">Phone: {r.phone}</div>}

@@ -1,17 +1,21 @@
+import logoUrl from '../assets/logo.png';
+
+/** The Krishna Hotel "KH" mark on a white tile, so the red logo stays readable on dark and light backgrounds. */
 export function LogoMark({ className = 'h-10 w-10' }) {
   return (
-    <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
-      <rect width="64" height="64" rx="16" fill="#0B3B2E" />
-      <path d="M32 14c-5 7-7.5 13-7.5 18.5S27.5 44 32 48c4.5-4 7.5-10 7.5-15.5S37 21 32 14z" fill="#F6EFDF" />
-      <path d="M18 26c0 9 4.5 17 14 22-4-6-5.5-12-4.8-18.3C24.5 27.5 21.5 26.3 18 26zM46 26c0 9-4.5 17-14 22 4-6 5.5-12 4.8-18.3C39.5 27.5 42.5 26.3 46 26z" fill="#D6B36A" />
-    </svg>
+    <img
+      src={logoUrl}
+      alt="Krishna Hotel logo"
+      className={`${className} shrink-0 rounded-xl bg-white object-contain p-0.5 shadow-sm ring-1 ring-black/5`}
+      draggable="false"
+    />
   );
 }
 
 export default function Logo({ light = false, subtitle = true, className = '' }) {
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
-      <LogoMark className="h-10 w-10 shrink-0" />
+      <LogoMark className="h-11 w-11" />
       <div className="leading-tight">
         <div className={`font-display text-xl font-semibold tracking-tight ${light ? 'text-cream-50' : 'text-brand-950'}`}>
           Krishna <span className={light ? 'text-gold-400' : 'text-brand-600'}>Dine</span>
