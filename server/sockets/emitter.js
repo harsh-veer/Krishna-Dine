@@ -20,6 +20,11 @@ function emitOrderEvent(event, order, extra = {}) {
   io.to(rooms.order(order._id.toString())).emit(event, { eventId, event, at, order: toPublicOrder(order), ...extra });
 }
 
+function emitOrderDeleted(id) {
+  if (!io) return;
+  io.to(rooms.STAFF).emit('order-deleted', { eventId: crypto.randomUUID(), id });
+}
+
 function emitTableEvent(event, table) {
   if (!io) return;
   io.to(rooms.STAFF).emit(event, { eventId: crypto.randomUUID(), table });
@@ -30,4 +35,4 @@ function emitMenuChanged() {
   io.emit('menu-updated', { eventId: crypto.randomUUID(), at: new Date().toISOString() });
 }
 
-module.exports = { setIO, getIO, emitOrderEvent, emitTableEvent, emitMenuChanged };
+module.exports = { setIO, getIO, emitOrderEvent, emitOrderDeleted, emitTableEvent, emitMenuChanged };

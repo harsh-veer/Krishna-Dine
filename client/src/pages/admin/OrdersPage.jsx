@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ReceiptText, RefreshCw, Search } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { ChevronLeft, ChevronRight, ReceiptText, RefreshCw, Search, Trash2 } from 'lucide-react';
 import { PageHeader } from '../../layouts/AdminLayout';
 import StatusBadge, { PaymentBadge } from '../../components/StatusBadge';
-import { Button, EmptyState, Input, Select, Spinner } from '../../components/ui';
+import { Button, ConfirmDialog, EmptyState, Input, Modal, Select, Spinner } from '../../components/ui';
 import { orderApi, tableApi } from '../../services/endpoints';
 import { errorMessage } from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -19,6 +20,10 @@ export default function OrdersPage() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [search, setSearch] = useState(params.get('search') || '');
+  const [selected, setSelected] = useState(new Set());
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [purgeOpen, setPurgeOpen] = useState(false);
   const debounced = useDebounce(search, 300);
 
   const filters = {
@@ -35,6 +40,15 @@ export default function OrdersPage() {
     setParams(next, { replace: true });
   };
 
+  const isDeletable = (o) => o.isClosed || o.orderStatus === 'cancelled';
+  const toggle = (id) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
   const load = useCallback(async () => {
     try {
       const q = { page: filters.page, limit: 25 };
@@ -43,7 +57,9 @@ export default function OrdersPage() {
       if (filters.status) q.status = filters.status;
       if (filters.paymentStatus) q.paymentStatus = filters.paymentStatus;
       if (debounced.trim()) q.search = debounced.trim();
-      setResult(await orderApi.list(q));
+      const res = await orderApi.list(q);
+      setResult(res);
+      setSelected((prev) => new Set([...prev].filter((id) => res.data.some((o) => o.id === id))));
       setError('');
     } catch (e) {
       setError(errorMessage(e));
@@ -74,9 +90,45 @@ export default function OrdersPage() {
     };
   }, [load]);
 
+  const deletableOnPage = (result?.data || []).filter(isDeletable);
+  const allSelected = deletableOnPage.length > 0 && deletableOnPage.every((o) => selected.has(o.id));
+
+  const doDelete = async () => {
+    setDeleting(true);
+    try {
+      const res = await orderApi.bulkDelete([...selected]);
+      toast.success(`${res.deleted.length} order${res.deleted.length === 1 ? '' : 's'} deleted${res.skipped.length ? `, ${res.skipped.length} skipped` : ''}`);
+      setSelected(new Set());
+      setConfirmDelete(false);
+      load();
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <>
-      <PageHeader title="Orders & billing" description="Filter orders, open one to see details, generate its bill and record payment." actions={<Button variant="secondary" icon={RefreshCw} onClick={load}>Refresh</Button>} />
+      <PageHeader
+        title="Orders & billing"
+        description="Filter orders, open one to see details, generate its bill and record payment."
+        actions={
+          <>
+            <Button variant="secondary" icon={Trash2} onClick={() => setPurgeOpen(true)} data-testid="purge-old">Clean up old orders</Button>
+            <Button variant="secondary" icon={RefreshCw} onClick={load}>Refresh</Button>
+          </>
+        }
+      />
+      {selected.size > 0 && (
+        <div className="card mb-4 flex flex-wrap items-center justify-between gap-3 border-red-200 bg-red-50/60 px-4 py-3" data-testid="bulk-bar">
+          <span className="text-sm font-semibold text-brand-950">{selected.size} order{selected.size === 1 ? '' : 's'} selected</span>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setSelected(new Set())}>Clear</Button>
+            <Button variant="danger" size="sm" icon={Trash2} onClick={() => setConfirmDelete(true)} data-testid="delete-selected">Delete selected</Button>
+          </div>
+        </div>
+      )}
 
       <div className="card mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5">
         <label className="relative lg:col-span-1">
@@ -113,7 +165,10 @@ export default function OrdersPage() {
             <table className="w-full min-w-[760px] text-sm">
               <thead className="bg-cream-100 text-left text-xs font-bold uppercase tracking-wider text-brand-900/50">
                 <tr>
-                  <th className="px-5 py-3">Order</th>
+                  <th className="w-10 py-3 pl-5">
+                    <input type="checkbox" className="h-4 w-4 accent-brand-700" checked={allSelected} disabled={deletableOnPage.length === 0} onChange={() => setSelected(allSelected ? new Set() : new Set(deletableOnPage.map((o) => o.id)))} aria-label="Select all finished orders on this page" title="Select all closed or cancelled orders on this page" />
+                  </th>
+                  <th className="px-3 py-3">Order</th>
                   <th className="px-3 py-3">Table</th>
                   <th className="px-3 py-3">Customer</th>
                   <th className="px-3 py-3">Placed</th>
@@ -125,7 +180,10 @@ export default function OrdersPage() {
               <tbody className="divide-y divide-cream-200">
                 {result.data.map((o) => (
                   <tr key={o.id} className="hover:bg-cream-50" data-testid="order-row">
-                    <td className="px-5 py-3">
+                    <td className="py-3 pl-5">
+                      <input type="checkbox" className="h-4 w-4 accent-brand-700 disabled:opacity-30" checked={selected.has(o.id)} disabled={!isDeletable(o)} onChange={() => toggle(o.id)} aria-label={`Select ${o.orderNumber}`} title={isDeletable(o) ? 'Select for deletion' : 'Only closed or cancelled orders can be deleted'} data-testid="row-select" />
+                    </td>
+                    <td className="px-3 py-3">
                       <Link to={`/admin/orders/${o.id}`} className="font-mono font-bold text-brand-800 hover:underline">{o.orderNumber}</Link>
                       <div className="text-xs text-brand-900/50">{o.items.reduce((s, i) => s + i.quantity, 0)} items{o.isClosed ? ' · closed' : ''}</div>
                     </td>
@@ -151,6 +209,71 @@ export default function OrdersPage() {
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        danger
+        loading={deleting}
+        title={`Delete ${selected.size} order${selected.size === 1 ? '' : 's'}?`}
+        message="This permanently removes the selected orders with their bills and payment records. Sales reports will no longer include them. This cannot be undone. Export your reports first if you need the figures."
+        confirmLabel="Delete permanently"
+        onConfirm={doDelete}
+      />
+      {purgeOpen && <PurgeModal onClose={() => setPurgeOpen(false)} onDone={() => { setPurgeOpen(false); setSelected(new Set()); load(); }} />}
     </>
+  );
+}
+
+function PurgeModal({ onClose, onDone }) {
+  const [days, setDays] = useState(90);
+  const [count, setCount] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setCount(null);
+    const t = setTimeout(() => {
+      orderApi.purgeOld(Number(days), true).then((r) => setCount(r.matching)).catch(() => setCount(null));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [days]);
+
+  const run = async () => {
+    setBusy(true);
+    try {
+      const r = await orderApi.purgeOld(Number(days));
+      toast.success(`${r.deleted.length} old order${r.deleted.length === 1 ? '' : 's'} deleted`);
+      onDone();
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title="Clean up old orders"
+      description="Deletes closed and cancelled orders older than the number of days you choose. Open orders are never touched."
+      size="sm"
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="danger" icon={Trash2} onClick={run} loading={busy} disabled={!count} data-testid="purge-confirm">
+            {count ? `Delete ${count} order${count === 1 ? '' : 's'}` : 'Nothing to delete'}
+          </Button>
+        </>
+      }
+    >
+      <label className="label" htmlFor="purge-days">Older than (days)</label>
+      <Select id="purge-days" value={days} onChange={(e) => setDays(e.target.value)}>
+        {[7, 30, 60, 90, 180, 365].map((d) => <option key={d} value={d}>{d} days</option>)}
+      </Select>
+      <p className="mt-3 text-sm text-brand-900/70" data-testid="purge-count">
+        {count === null ? 'Counting…' : `${count} finished order${count === 1 ? '' : 's'} match.`}
+      </p>
+      <p className="mt-2 text-xs text-brand-900/50">This permanently removes the orders, bills and payments, and they will no longer appear in reports. Export your monthly CSV reports first if you need the figures.</p>
+    </Modal>
   );
 }

@@ -287,3 +287,52 @@ test('sockets: invalid staff token is refused, guests cannot receive kitchen eve
   await new Promise((r) => setTimeout(r, 300));
   assert.equal(leaked, false);
 });
+
+test('order deletion: admin only, finished orders only, payments removed, old-order purge', async () => {
+  const t = (await api('GET', '/tables', { token: adminToken })).data.data.find((x) => x.tableNumber === '03');
+  const item = (await api('GET', '/menu')).data.data.items[1];
+  const place = async () => (await api('POST', '/orders', { body: { qrToken: t.uniqueQrToken, customerName: 'Del', items: [{ menuItemId: item.id, quantity: 1 }] } })).data.data.order.id;
+  const open = await place();
+  const cancelled = await place();
+  const done = await place();
+
+  // Open orders cannot be deleted.
+  assert.equal((await api('DELETE', `/orders/${open}`, { token: adminToken })).status, 409);
+  // Kitchen staff cannot delete anything.
+  assert.equal((await api('DELETE', `/orders/${cancelled}`, { token: kitchenToken })).status, 403);
+  assert.equal((await api('POST', '/orders/bulk-delete', { token: kitchenToken, body: { ids: [cancelled] } })).status, 403);
+  assert.equal((await api('DELETE', `/orders/${cancelled}`)).status, 401);
+
+  // Cancelled orders can be deleted.
+  await api('PATCH', `/orders/${cancelled}/status`, { token: kitchenToken, body: { status: 'cancelled', reason: 'test cancel' } });
+  const admin = await connect({ token: adminToken });
+  const evP = waitFor(admin, 'order-deleted');
+  const del = await api('DELETE', `/orders/${cancelled}`, { token: adminToken });
+  assert.equal(del.status, 200);
+  assert.equal((await evP).id, cancelled);
+  assert.equal((await api('GET', `/orders/${cancelled}`, { token: adminToken })).status, 404);
+
+  // A paid, closed order is deleted together with its payment records.
+  for (const s of ['accepted', 'preparing', 'ready', 'served']) await api('PATCH', `/orders/${done}/status`, { token: kitchenToken, body: { status: s } });
+  await api('POST', `/orders/${done}/payments`, { token: adminToken, body: { paymentMethod: 'cash' } });
+  await api('POST', `/orders/${done}/close`, { token: adminToken });
+  const { Payment } = require('../models');
+  assert.equal(await Payment.countDocuments({ order: done }), 1);
+  const bulk = await api('POST', '/orders/bulk-delete', { token: adminToken, body: { ids: [done, open] } });
+  assert.equal(bulk.status, 200);
+  assert.equal(bulk.data.data.deleted.length, 1);
+  assert.equal(bulk.data.data.skipped.length, 1);
+  assert.equal(await Payment.countDocuments({ order: done }), 0);
+  assert.ok(await Order.findById(open), 'open order is untouched');
+
+  // Purge: finished orders older than N days go, recent ones stay.
+  const oldId = await place();
+  await api('PATCH', `/orders/${oldId}/status`, { token: adminToken, body: { status: 'cancelled', reason: 'old test' } });
+  await Order.collection.updateOne({ _id: new mongoose.Types.ObjectId(oldId) }, { $set: { createdAt: new Date(Date.now() - 40 * 86400000) } }); // createdAt is immutable through Mongoose
+  const dry = await api('POST', '/orders/purge-old', { token: adminToken, body: { olderThanDays: 30, dryRun: true } });
+  assert.equal(dry.data.data.matching, 1);
+  const purge = await api('POST', '/orders/purge-old', { token: adminToken, body: { olderThanDays: 30 } });
+  assert.equal(purge.data.data.deleted.length, 1);
+  assert.equal(await Order.countDocuments({ _id: oldId }), 0);
+  assert.equal((await api('POST', '/orders/purge-old', { token: adminToken, body: { olderThanDays: 0 } })).status, 400);
+});

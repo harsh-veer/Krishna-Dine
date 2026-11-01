@@ -72,6 +72,14 @@ export function useStaffOrders({ params, onNewOrder, onEvent } = {}) {
       });
     });
 
+    socket.on('order-deleted', (payload) => {
+      if (!payload?.id) return;
+      setOrders((prev) => {
+        const { [payload.id]: _gone, ...rest } = prev;
+        return rest;
+      });
+    });
+
     // Safety net in case a WebSocket is silently dropped by a proxy.
     const poll = setInterval(() => {
       if (!socket.connected) reload();

@@ -51,6 +51,9 @@ export const orderApi = {
   generateBill: (id, body = {}) => unwrap(api.post(`/orders/${id}/bill`, body)),
   pay: (id, body) => unwrap(api.post(`/orders/${id}/payments`, body)),
   close: (id) => unwrap(api.post(`/orders/${id}/close`)),
+  remove: (id) => unwrap(api.delete(`/orders/${id}`)),
+  bulkDelete: (ids) => unwrap(api.post('/orders/bulk-delete', { ids })),
+  purgeOld: (olderThanDays, dryRun = false) => unwrap(api.post('/orders/purge-old', { olderThanDays, dryRun })),
 };
 
 export const paymentApi = {

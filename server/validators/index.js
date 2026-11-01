@@ -128,6 +128,8 @@ const orders = {
   status: z
     .object({ status: z.enum(Object.values(ORDER_STATUS).filter((s) => s !== 'pending')), reason: trimmed(200).optional() })
     .refine((v) => v.status !== 'cancelled' || (v.reason && v.reason.length >= 3), { message: 'Please give a reason for cancelling (at least 3 characters)', path: ['reason'] }),
+  bulkDelete: z.object({ ids: z.array(objectId).min(1, 'Select at least one order').max(200, 'Delete at most 200 orders at a time') }),
+  purge: z.object({ olderThanDays: z.coerce.number().int().min(1, 'Choose at least 1 day').max(3650), dryRun: z.boolean().optional().default(false) }),
   tableParams: z.object({ tableId: objectId }),
   tableQuery: z.object({ includeClosed: boolish.optional() }),
   trackQuery: z.object({ token: z.string().max(100).optional() }),

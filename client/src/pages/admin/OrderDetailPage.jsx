@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Ban, Banknote, CheckCircle2, ChefHat, ConciergeBell, CreditCard, HandPlatter, Lock, MessageSquareText, Printer, ReceiptText, RefreshCw, Smartphone, ThumbsUp, TriangleAlert } from 'lucide-react';
+import { ArrowLeft, Ban, Banknote, CheckCircle2, ChefHat, ConciergeBell, CreditCard, HandPlatter, Lock, MessageSquareText, Printer, ReceiptText, RefreshCw, Smartphone, ThumbsUp, Trash2, TriangleAlert } from 'lucide-react';
 import { orderApi, paymentApi } from '../../services/endpoints';
 import { errorMessage, tokenStore } from '../../services/api';
 import { createSocket, ORDER_EVENTS } from '../../services/socket';
 import StatusBadge, { PaymentBadge } from '../../components/StatusBadge';
 import CancelOrderDialog from '../../components/CancelOrderDialog';
 import VegMark from '../../components/VegMark';
-import { Badge, Button, Field, Input, Spinner, Toggle } from '../../components/ui';
+import { Badge, Button, ConfirmDialog, Field, Input, Spinner, Toggle } from '../../components/ui';
 import { formatDateTime, formatINR2, formatTime, PAYMENT_LABEL, STATUS_META } from '../../utils/format';
 
 const NEXT = {
@@ -30,6 +30,8 @@ export default function OrderDetailPage() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const navigate = useNavigate();
   const [method, setMethod] = useState('cash');
   const [reference, setReference] = useState('');
   const [utr, setUtr] = useState('');
@@ -103,6 +105,9 @@ export default function OrderDetailPage() {
             <Button icon={next.icon} loading={busy === 'status'} onClick={() => run('status', () => orderApi.setStatus(o.id, next.status), `Order ${STATUS_META[next.status].label.toLowerCase()}`)} data-testid="detail-advance">
               {next.label}
             </Button>
+          )}
+          {(o.isClosed || cancelled) && (
+            <Button variant="secondary" className="text-red-600" icon={Trash2} onClick={() => setDeleteOpen(true)} data-testid="delete-order">Delete order</Button>
           )}
           {!cancelled && !o.isClosed && !paid && o.orderStatus !== 'served' && (
             <Button variant="secondary" className="text-red-600" icon={Ban} onClick={() => setCancelOpen(true)}>Cancel</Button>
@@ -276,6 +281,22 @@ export default function OrderDetailPage() {
           )}
         </div>
       </div>
+      <ConfirmDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        danger
+        title={`Delete order ${o.orderNumber}?`}
+        message="This permanently removes the order, its bill and payment records. Reports and totals will no longer include it. This cannot be undone."
+        confirmLabel="Delete permanently"
+        loading={busy === 'delete'}
+        onConfirm={async () => {
+          const res = await run('delete', () => orderApi.remove(o.id));
+          if (res) {
+            toast.success(`Order ${o.orderNumber} deleted`);
+            navigate('/admin/orders', { replace: true });
+          }
+        }}
+      />
       <CancelOrderDialog order={cancelOpen ? o : null} onClose={() => setCancelOpen(false)} onCancelled={() => load()} />
     </>
   );

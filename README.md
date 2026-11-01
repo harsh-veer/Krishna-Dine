@@ -136,7 +136,7 @@ Both accounts are created with **"must change password"** set. The server blocks
 
 ### Admin dashboard
 - **Dashboard:** orders today, revenue today, pending, completed, collected amount, best sellers (7 days), daily sales (7 days) and weekly sales (8 weeks), latest orders. Updates live.
-- **Orders & billing:** filter by date, table, status, payment status and search; open an order to see items, timeline, status actions, the bill and payments.
+- **Orders & billing:** filter by date, table, status, payment status and search; open an order to see items, timeline, status actions, the bill and payments. **Deleting history:** tick finished orders (closed or cancelled) and use *Delete selected*, delete one from its detail page, or use *Clean up old orders* to remove everything finished that is older than 7 to 365 days. Deletion is permanent, asks for confirmation, removes the order's payments too, and never touches open orders. Deleted orders drop out of reports, so export the monthly CSV first if you need the figures.
 - **Menu:** add, edit and delete items (soft delete), upload photos, set price, category, description, veg flag, prep time and availability; manage categories (order, visibility).
 - **Tables & QR:** add and edit tables, see status and open orders, view, download (PNG card with table number) and print QR codes individually or in bulk (print sheet or ZIP of PNGs), regenerate a code (old printouts stop working), disable or enable a table.
 - **Reports:** daily, weekly and monthly sales, orders, GST, collected, hourly or daily chart, popular items, payment methods; **Export CSV**.
@@ -181,6 +181,8 @@ Auth: send `Authorization: Bearer <token>` (the login response also sets an http
 | `PATCH /api/payments/:id/confirm` · `PATCH /api/payments/:id/fail` | admin | Confirm (with UTR) or fail a pending UPI payment |
 | `POST /api/payments/:id/verify` | admin | Gateway signature verification (when a gateway is configured) |
 | `POST /api/orders/:id/close` | admin | Close a served, paid order |
+| `DELETE /api/orders/:id` · `POST /api/orders/bulk-delete` (`{ ids }`, max 200) | admin | Permanently delete closed or cancelled orders and their payments. Open orders are refused |
+| `POST /api/orders/purge-old` (`{ olderThanDays, dryRun? }`) | admin | Delete all closed or cancelled orders older than N days (`dryRun` only counts) |
 | `GET /api/reports/dashboard` | admin | Dashboard numbers |
 | `GET /api/reports/daily?date=YYYY-MM-DD` | admin | Daily report (`&format=csv`) |
 | `GET /api/reports/weekly?end=YYYY-MM-DD` | admin | 7 days ending on `end` (`&format=csv`) |

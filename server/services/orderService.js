@@ -1,12 +1,12 @@
 'use strict';
 const mongoose = require('mongoose');
-const { Order, Table, MenuItem, Category, Settings, Counter } = require('../models');
+const { Order, Table, MenuItem, Category, Settings, Counter, Payment } = require('../models');
 const { STATUS_FLOW, CANCELLABLE, STATUS_EVENT, ORDER_STATUS } = require('../config/constants');
 const ApiError = require('../utils/ApiError');
 const { localDateKey } = require('../utils/dates');
 const { computeTotals } = require('./pricingService');
 const { trackingTokenFor } = require('./trackingService');
-const { emitOrderEvent, emitTableEvent } = require('../sockets/emitter');
+const { emitOrderEvent, emitTableEvent, emitOrderDeleted } = require('../sockets/emitter');
 const { serializeTable } = require('./qrService');
 
 async function resolveActiveTable(qrToken) {
@@ -185,4 +185,31 @@ async function updateStatus(orderId, { status, reason }, user) {
   return { order: updated, changed: true };
 }
 
-module.exports = { createOrder, updateStatus, resolveActiveTable, refreshTableStatus };
+/**
+ * Permanently deletes finished orders (closed or cancelled) together with their payment records.
+ * Orders still in progress, or served but not yet closed, are skipped so a live order or an
+ * unsettled bill can never be removed by accident. Returns which ids were deleted or skipped.
+ */
+async function deleteOrders(ids) {
+  const orders = await Order.find({ _id: { $in: ids } }).select('orderNumber orderStatus isClosed table');
+  const found = new Map(orders.map((o) => [String(o._id), o]));
+  const deletable = [];
+  const skipped = [];
+  for (const id of ids) {
+    const o = found.get(String(id));
+    if (!o) skipped.push({ id, reason: 'Order not found' });
+    else if (o.isClosed || o.orderStatus === ORDER_STATUS.CANCELLED) deletable.push(o);
+    else skipped.push({ id, orderNumber: o.orderNumber, reason: 'Still open. Close or cancel it before deleting.' });
+  }
+  if (deletable.length) {
+    const delIds = deletable.map((o) => o._id);
+    await Payment.deleteMany({ order: { $in: delIds } });
+    await Order.deleteMany({ _id: { $in: delIds }, $or: [{ isClosed: true }, { orderStatus: ORDER_STATUS.CANCELLED }] });
+    deletable.forEach((o) => emitOrderDeleted(o._id.toString()));
+    const tables = [...new Set(deletable.map((o) => String(o.table)))];
+    await Promise.all(tables.map((t) => refreshTableStatus(t).catch(() => {})));
+  }
+  return { deleted: deletable.map((o) => ({ id: o._id.toString(), orderNumber: o.orderNumber })), skipped };
+}
+
+module.exports = { createOrder, updateStatus, deleteOrders, resolveActiveTable, refreshTableStatus };

@@ -94,3 +94,28 @@ exports.close = async (req, res) => {
   const { order, changed } = await billing.closeOrder(req.params.id, req.user);
   res.json({ success: true, data: toStaffOrder(order), meta: { changed } });
 };
+
+/** Admin only: permanently delete finished (closed or cancelled) orders. */
+exports.bulkDelete = async (req, res) => {
+  const result = await orderService.deleteOrders(req.body.ids);
+  res.json({ success: true, data: result });
+};
+
+exports.remove = async (req, res) => {
+  const result = await orderService.deleteOrders([req.params.id]);
+  if (!result.deleted.length) {
+    const reason = result.skipped[0]?.reason || 'Order could not be deleted';
+    throw reason === 'Order not found' ? ApiError.notFound(reason) : ApiError.conflict(reason);
+  }
+  res.json({ success: true, data: result });
+};
+
+/** Admin only: delete every closed or cancelled order older than N days (dryRun just counts them). */
+exports.purgeOld = async (req, res) => {
+  const cutoff = new Date(Date.now() - req.body.olderThanDays * 24 * 60 * 60 * 1000);
+  const filter = { createdAt: { $lt: cutoff }, $or: [{ isClosed: true }, { orderStatus: 'cancelled' }] };
+  if (req.body.dryRun) return res.json({ success: true, data: { matching: await Order.countDocuments(filter), cutoff } });
+  const ids = (await Order.find(filter).select('_id').limit(5000)).map((o) => String(o._id));
+  const result = ids.length ? await orderService.deleteOrders(ids) : { deleted: [], skipped: [] };
+  return res.json({ success: true, data: { ...result, cutoff } });
+};
