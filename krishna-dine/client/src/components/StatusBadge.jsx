@@ -1,9 +1,9 @@
 import Badge from './ui/Badge';
 import { STATUS_META } from '../utils/format';
 
-export default function StatusBadge({ status, className = '' }) {
+export default function StatusBadge({ status, label, className = '' }) {
   const meta = STATUS_META[status] || { label: status, tone: 'slate' };
-  return <Badge tone={meta.tone} className={className}>{meta.label}</Badge>;
+  return <Badge tone={meta.tone} className={className}>{label || meta.label}</Badge>;
 }
 
 export function PaymentBadge({ status }) {

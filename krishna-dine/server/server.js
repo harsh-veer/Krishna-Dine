@@ -8,6 +8,7 @@ const { initSocket } = require('./sockets');
 async function start() {
   assertEnv();
   await connectDB();
+  require('./seed/hindi').backfillHindi().catch((e) => console.warn('Hindi name backfill skipped:', e.message));
   const app = createApp();
   const server = http.createServer(app);
   const io = initSocket(server);

@@ -55,18 +55,19 @@ async function createOrder(input) {
   // Merge duplicate lines of the same item (notes are concatenated).
   const merged = new Map();
   for (const line of input.items) {
-    const key = String(line.menuItemId);
+    const addons = [...new Set(line.addons || [])].sort();
+    const key = [String(line.menuItemId), line.size || '', addons.join('|')].join('::');
     const prev = merged.get(key);
     if (prev) {
       prev.quantity += line.quantity;
       if (line.notes) prev.notes = [prev.notes, line.notes].filter(Boolean).join('; ');
-    } else merged.set(key, { menuItemId: key, quantity: line.quantity, notes: line.notes || '' });
+    } else merged.set(key, { menuItemId: String(line.menuItemId), size: line.size || '', addons, quantity: line.quantity, notes: line.notes || '' });
   }
   for (const line of merged.values()) {
     if (line.quantity > 50) throw ApiError.badRequest('A maximum of 50 of each item can be ordered at once');
   }
 
-  const ids = [...merged.keys()];
+  const ids = [...new Set([...merged.values()].map((l) => l.menuItemId))];
   const menuItems = await MenuItem.find({ _id: { $in: ids }, isDeleted: false });
   const activeCats = new Set(
     (await Category.find({ _id: { $in: menuItems.map((m) => m.category) }, isActive: true }).select('_id')).map((c) => String(c._id))
@@ -81,10 +82,29 @@ async function createOrder(input) {
       unavailable.push({ menuItemId: line.menuItemId, name: item ? item.name : 'Unknown item' });
       continue;
     }
+    // Portion size and extras are priced from the database, never from the client.
+    let unit = item.price;
+    let label = item.name;
+    if (item.sizes && item.sizes.length) {
+      const size = item.sizes.find((s) => s.label === line.size);
+      if (!size) throw ApiError.badRequest(`Please choose a size for ${item.name}`);
+      unit = size.price;
+      label += ` (${size.label})`;
+    } else if (line.size) {
+      throw ApiError.badRequest(`${item.name} has no size options`);
+    }
+    const extras = [];
+    for (const name of line.addons) {
+      const addon = (item.addons || []).find((a) => a.name === name);
+      if (!addon) throw ApiError.badRequest(`"${name}" is not available for ${item.name}`);
+      unit += addon.price;
+      extras.push(addon.name);
+    }
+    if (extras.length) label += ` + ${extras.join(', ')}`;
     lines.push({
       menuItem: item._id,
-      name: item.name,
-      price: item.price,
+      name: label,
+      price: Math.round(unit * 100) / 100,
       quantity: line.quantity,
       isVegetarian: item.isVegetarian,
       notes: line.notes.slice(0, 120),

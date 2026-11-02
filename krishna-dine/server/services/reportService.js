@@ -147,7 +147,22 @@ async function dashboard() {
     Order.countDocuments({ isClosed: false, orderStatus: { $in: ['pending', 'accepted', 'preparing', 'ready'] } }),
   ]);
 
-  return { date: today, today: todaySummary, activeOrders, bestSellers, daily: last7, weekly };
+  // Customer ratings over the last 30 days.
+  const since = addDays(end, -30);
+  const [fbAgg, recent] = await Promise.all([
+    Order.aggregate([
+      { $match: { 'feedback.rating': { $exists: true }, 'feedback.at': { $gte: since } } },
+      { $group: { _id: null, count: { $sum: 1 }, avg: { $avg: '$feedback.rating' } } },
+    ]),
+    Order.find({ 'feedback.rating': { $exists: true } }).sort({ 'feedback.at': -1 }).limit(5).select('orderNumber tableNumber customerName feedback'),
+  ]);
+  const feedback = {
+    count: fbAgg[0]?.count || 0,
+    average: fbAgg[0] ? Math.round(fbAgg[0].avg * 10) / 10 : null,
+    recent: recent.map((o) => ({ id: String(o._id), orderNumber: o.orderNumber, tableNumber: o.tableNumber, customerName: o.customerName, rating: o.feedback.rating, comment: o.feedback.comment || '', at: o.feedback.at })),
+  };
+
+  return { date: today, today: todaySummary, activeOrders, bestSellers, daily: last7, weekly, feedback };
 }
 
 module.exports = { dailyReport, weeklyReport, monthlyReport, dashboard };

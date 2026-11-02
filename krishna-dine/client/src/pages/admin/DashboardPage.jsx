@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Clock, IndianRupee, ReceiptText, Timer, Wallet } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Clock, IndianRupee, ReceiptText, Star, Timer, Wallet } from 'lucide-react';
 import { PageHeader } from '../../layouts/AdminLayout';
 import StatCard from '../../components/StatCard';
 import StatusBadge, { PaymentBadge } from '../../components/StatusBadge';
@@ -108,6 +108,38 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
+          {stats.feedback && (
+            <div className="card mt-6 p-5" data-testid="feedback-summary">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 className="font-bold">Customer feedback</h2>
+                  <p className="text-xs text-brand-900/50">Last 30 days</p>
+                </div>
+                {stats.feedback.count > 0 ? (
+                  <div className="flex items-center gap-2">
+                    <Star className="h-6 w-6 fill-gold-400 text-gold-400" />
+                    <span className="text-2xl font-extrabold">{stats.feedback.average}</span>
+                    <span className="text-sm text-brand-900/50">from {stats.feedback.count} rating{stats.feedback.count === 1 ? '' : 's'}</span>
+                  </div>
+                ) : null}
+              </div>
+              {stats.feedback.recent.length === 0 ? (
+                <p className="mt-3 text-sm text-brand-900/55">No ratings yet. Customers can rate their meal after it is served.</p>
+              ) : (
+                <ul className="mt-3 divide-y divide-cream-200">
+                  {stats.feedback.recent.map((f) => (
+                    <li key={f.id} className="flex items-start gap-3 py-2.5 text-sm">
+                      <span className="inline-flex shrink-0 items-center gap-0.5 font-bold"><Star className="h-4 w-4 fill-gold-400 text-gold-400" /> {f.rating}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="text-brand-900/80">{f.comment || <span className="text-brand-900/40">No comment</span>}</span>
+                        <span className="block text-xs text-brand-900/45">{f.customerName} · Table {f.tableNumber} · <Link to={`/admin/orders/${f.id}`} className="hover:underline">{f.orderNumber}</Link></span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
           <p className="mt-4 flex items-center gap-1.5 text-xs text-brand-900/45"><Wallet className="h-3.5 w-3.5" /> Revenue counts every order that was not cancelled. "Collected" counts paid orders only.</p>
         </>
       )}

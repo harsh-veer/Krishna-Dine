@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
@@ -15,6 +15,10 @@ import { formatINR } from '../../utils/format';
 const itemSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(100),
   description: z.string().trim().max(500),
+  nameHi: z.string().trim().max(100),
+  descriptionHi: z.string().trim().max(500),
+  sizes: z.array(z.object({ label: z.string().trim().min(1, 'Size name needed').max(30), price: z.coerce.number({ message: 'Price?' }).min(0).max(100000) })).max(6),
+  addons: z.array(z.object({ name: z.string().trim().min(1, 'Extra name needed').max(40), price: z.coerce.number({ message: 'Price?' }).min(0).max(10000) })).max(12),
   category: z.string().min(1, 'Choose a category'),
   price: z.coerce.number({ message: 'Enter a price' }).min(0, 'Price cannot be negative').max(100000),
   preparationTime: z.coerce.number().int().min(0).max(240),
@@ -25,6 +29,7 @@ const itemSchema = z.object({
 
 const catSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(60),
+  nameHi: z.string().trim().max(60),
   description: z.string().trim().max(300),
   displayOrder: z.coerce.number().int().min(0).max(1000),
   isActive: z.boolean(),
@@ -190,6 +195,10 @@ function ItemModal({ item, categories, onClose, onSaved }) {
     defaultValues: {
       name: item.name || '',
       description: item.description || '',
+      nameHi: item.nameHi || '',
+      descriptionHi: item.descriptionHi || '',
+      sizes: (item.sizes || []).map((x) => ({ label: x.label, price: x.price })),
+      addons: (item.addons || []).map((x) => ({ name: x.name, price: x.price })),
       category: item.category || categories[0]?.id || '',
       price: item.price ?? '',
       preparationTime: item.preparationTime ?? 15,
@@ -198,6 +207,9 @@ function ItemModal({ item, categories, onClose, onSaved }) {
       image: item.image || '',
     },
   });
+  const sizesField = useFieldArray({ control, name: 'sizes' });
+  const addonsField = useFieldArray({ control, name: 'addons' });
+  const hasSizes = sizesField.fields.length > 0;
   const image = watch('image');
   const name = watch('name');
   const catName = categories.find((c) => c.id === watch('category'))?.name;
@@ -259,7 +271,7 @@ function ItemModal({ item, categories, onClose, onSaved }) {
         <div className="space-y-4">
           <Field label="Name" error={err.name?.message}><Input {...register('name')} placeholder="Paneer Tikka" /></Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Price (₹)" error={err.price?.message}><Input type="number" step="0.01" min="0" inputMode="decimal" {...register('price')} /></Field>
+            <Field label="Price (₹)" error={err.price?.message} hint={hasSizes ? 'Set from the cheapest size' : undefined}><Input type="number" step="0.01" min="0" inputMode="decimal" readOnly={hasSizes} {...register('price')} /></Field>
             <Field label="Prep time (min)" error={err.preparationTime?.message}><Input type="number" min="0" {...register('preparationTime')} /></Field>
           </div>
           <Field label="Category" error={err.category?.message}>
@@ -268,6 +280,39 @@ function ItemModal({ item, categories, onClose, onSaved }) {
             </Select>
           </Field>
           <Field label="Description" error={err.description?.message}><Textarea {...register('description')} maxLength={500} /></Field>
+          <div className="rounded-2xl border border-cream-300 bg-cream-50 p-3.5">
+            <div className="mb-2 text-sm font-bold">Hindi (optional)</div>
+            <div className="space-y-3">
+              <Field label="Name in Hindi"><Input {...register('nameHi')} placeholder="पनीर टिक्का" /></Field>
+              <Field label="Description in Hindi"><Textarea {...register('descriptionHi')} maxLength={500} rows={2} /></Field>
+            </div>
+          </div>
+          <OptionList
+            title="Portion sizes"
+            hint="For example Half and Full. Customers must pick one, and the price of the size replaces the item price."
+            fields={sizesField.fields}
+            nameKey="label"
+            namePlaceholder="Half"
+            prefix="sizes"
+            register={register}
+            errors={err.sizes}
+            onAdd={() => sizesField.append({ label: '', price: '' })}
+            onRemove={sizesField.remove}
+            addLabel="Add size"
+          />
+          <OptionList
+            title="Extras"
+            hint="Optional add-ons such as extra cheese. The price is added to the item."
+            fields={addonsField.fields}
+            nameKey="name"
+            namePlaceholder="Extra cheese"
+            prefix="addons"
+            register={register}
+            errors={err.addons}
+            onAdd={() => addonsField.append({ name: '', price: '' })}
+            onRemove={addonsField.remove}
+            addLabel="Add extra"
+          />
           <div className="flex flex-wrap gap-6">
             <Controller name="isVegetarian" control={control} render={({ field }) => (
               <label className="flex items-center gap-2.5 text-sm font-semibold"><Toggle checked={field.value} onChange={field.onChange} label="Vegetarian" /> Vegetarian</label>
@@ -282,11 +327,35 @@ function ItemModal({ item, categories, onClose, onSaved }) {
   );
 }
 
+function OptionList({ title, hint, fields, nameKey, namePlaceholder, prefix, register, errors, onAdd, onRemove, addLabel }) {
+  return (
+    <div className="rounded-2xl border border-cream-300 p-3.5">
+      <div className="text-sm font-bold">{title}</div>
+      <p className="mb-2 text-xs text-brand-900/55">{hint}</p>
+      <div className="space-y-2">
+        {fields.map((f, i) => (
+          <div key={f.id}>
+            <div className="flex items-center gap-2">
+              <Input className="flex-1" placeholder={namePlaceholder} {...register(`${prefix}.${i}.${nameKey}`)} data-testid={`${prefix}-name`} />
+              <Input className="w-24" type="number" step="0.01" min="0" inputMode="decimal" placeholder="₹" {...register(`${prefix}.${i}.price`)} data-testid={`${prefix}-price`} />
+              <button type="button" onClick={() => onRemove(i)} className="rounded-lg p-2 text-red-600 hover:bg-red-50" aria-label="Remove">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            {(errors?.[i]?.[nameKey] || errors?.[i]?.price) && <p className="mt-1 text-xs text-red-600">{errors[i][nameKey]?.message || errors[i].price?.message}</p>}
+          </div>
+        ))}
+      </div>
+      <Button type="button" variant="secondary" size="sm" className="mt-2" icon={Plus} onClick={onAdd} data-testid={`add-${prefix}`}>{addLabel}</Button>
+    </div>
+  );
+}
+
 function CategoryModal({ category, onClose, onSaved }) {
   const isNew = !category.id;
   const { register, handleSubmit, control, formState } = useForm({
     resolver: zodResolver(catSchema),
-    defaultValues: { name: category.name || '', description: category.description || '', displayOrder: category.displayOrder ?? 10, isActive: category.isActive ?? true },
+    defaultValues: { name: category.name || '', nameHi: category.nameHi || '', description: category.description || '', displayOrder: category.displayOrder ?? 10, isActive: category.isActive ?? true },
   });
   const onSubmit = handleSubmit(async (values) => {
     try {
@@ -302,6 +371,7 @@ function CategoryModal({ category, onClose, onSaved }) {
     <Modal open onClose={onClose} title={isNew ? 'Add category' : `Edit ${category.name}`} size="sm" footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={onSubmit} loading={formState.isSubmitting}>Save</Button></>}>
       <form onSubmit={onSubmit} className="space-y-4">
         <Field label="Name" error={formState.errors.name?.message}><Input {...register('name')} /></Field>
+        <Field label="Name in Hindi (optional)"><Input {...register('nameHi')} placeholder="स्टार्टर्स" /></Field>
         <Field label="Description"><Textarea {...register('description')} /></Field>
         <Field label="Display order" hint="Lower numbers appear first"><Input type="number" {...register('displayOrder')} /></Field>
         <Controller name="isActive" control={control} render={({ field }) => (

@@ -41,4 +41,18 @@ const items = [
   ['Desserts', 'Rasmalai', 'Soft paneer discs in chilled saffron milk with pistachios.', 119, 5],
 ];
 
-module.exports = { categories, items };
+// Hindi names for the sample menu. Filled in automatically for any item or category whose Hindi name is still empty.
+const hindiNames = {
+  'Starters': 'स्टार्टर्स', 'Soups': 'सूप', 'Chinese': 'चाइनीज़', 'South Indian': 'साउथ इंडियन', 'Main Course': 'मुख्य व्यंजन',
+  'Indian Breads': 'रोटी और नान', 'Rice and Biryani': 'चावल और बिरयानी', 'Beverages': 'पेय', 'Desserts': 'मिठाई',
+  'Paneer Tikka': 'पनीर टिक्का', 'Hara Bhara Kebab': 'हरा भरा कबाब', 'Veg Spring Rolls': 'वेज स्प्रिंग रोल',
+  'Tomato Shorba': 'टमाटर शोरबा', 'Sweet Corn Soup': 'स्वीट कॉर्न सूप', 'Hot and Sour Soup': 'हॉट एंड सावर सूप',
+  'Veg Manchurian': 'वेज मंचूरियन', 'Chilli Paneer': 'चिली पनीर', 'Veg Hakka Noodles': 'वेज हक्का नूडल्स',
+  'Masala Dosa': 'मसाला डोसा', 'Idli Sambar': 'इडली सांभर', 'Medu Vada': 'मेदू वड़ा',
+  'Paneer Butter Masala': 'पनीर बटर मसाला', 'Dal Makhani': 'दाल मखनी', 'Kadai Mix Veg': 'कढ़ाई मिक्स वेज', 'Shahi Malai Kofta': 'शाही मलाई कोफ्ता',
+  'Butter Naan': 'बटर नान', 'Tandoori Roti': 'तंदूरी रोटी', 'Garlic Naan': 'गार्लिक नान',
+  'Veg Dum Biryani': 'वेज दम बिरयानी', 'Jeera Rice': 'जीरा राइस', 'Masala Chai': 'मसाला चाय', 'Sweet Lassi': 'मीठी लस्सी',
+  'Gulab Jamun': 'गुलाब जामुन', 'Rasmalai': 'रसमलाई',
+};
+
+module.exports = { categories, items, hindiNames };

@@ -24,6 +24,7 @@ export default function OrdersPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [purgeOpen, setPurgeOpen] = useState(false);
+  const [rowDelete, setRowDelete] = useState(null);
   const debounced = useDebounce(search, 300);
 
   const filters = {
@@ -108,6 +109,20 @@ export default function OrdersPage() {
     }
   };
 
+  const doRowDelete = async () => {
+    setDeleting(true);
+    try {
+      await orderApi.remove(rowDelete.id);
+      toast.success(`${rowDelete.orderNumber} deleted`);
+      setRowDelete(null);
+      load();
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <>
       <PageHeader
@@ -175,6 +190,7 @@ export default function OrdersPage() {
                   <th className="px-3 py-3">Status</th>
                   <th className="px-3 py-3">Payment</th>
                   <th className="px-5 py-3 text-right">Total</th>
+                  <th className="w-14 py-3 pr-5 text-right"><span className="sr-only">Delete</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-cream-200">
@@ -193,6 +209,19 @@ export default function OrdersPage() {
                     <td className="px-3 py-3"><StatusBadge status={o.orderStatus} /></td>
                     <td className="px-3 py-3"><PaymentBadge status={o.paymentStatus} />{o.paymentMethod && <span className="ml-1 text-xs text-brand-900/50">{PAYMENT_LABEL[o.paymentMethod]}</span>}</td>
                     <td className="px-5 py-3 text-right font-bold tabular-nums">{formatINR(o.totalAmount)}</td>
+                    <td className="py-3 pr-5 text-right">
+                      <button
+                        type="button"
+                        onClick={() => setRowDelete(o)}
+                        disabled={!isDeletable(o)}
+                        className="rounded-lg p-2 text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:text-brand-900/20 disabled:hover:bg-transparent"
+                        title={isDeletable(o) ? 'Delete this order' : 'Close or cancel the order before deleting'}
+                        aria-label={`Delete ${o.orderNumber}`}
+                        data-testid="row-delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -218,6 +247,16 @@ export default function OrdersPage() {
         message="This permanently removes the selected orders with their bills and payment records. Sales reports will no longer include them. This cannot be undone. Export your reports first if you need the figures."
         confirmLabel="Delete permanently"
         onConfirm={doDelete}
+      />
+      <ConfirmDialog
+        open={!!rowDelete}
+        onClose={() => setRowDelete(null)}
+        danger
+        loading={deleting}
+        title={`Delete ${rowDelete?.orderNumber || 'order'}?`}
+        message="This permanently removes the order with its bill and payment records. Sales reports will no longer include it. This cannot be undone."
+        confirmLabel="Delete permanently"
+        onConfirm={doRowDelete}
       />
       {purgeOpen && <PurgeModal onClose={() => setPurgeOpen(false)} onDone={() => { setPurgeOpen(false); setSelected(new Set()); load(); }} />}
     </>

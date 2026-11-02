@@ -6,6 +6,8 @@ import { publicApi } from '../../services/endpoints';
 import { errorMessage } from '../../services/api';
 import { createSocket } from '../../services/socket';
 import Logo from '../../components/Logo';
+import LanguageToggle from '../../components/LanguageToggle';
+import { useI18n } from '../../i18n';
 import MenuItemCard from './MenuItemCard';
 import CartSheet from './CartSheet';
 import { Button, EmptyState, FullPageSpinner } from '../../components/ui';
@@ -28,7 +30,7 @@ export default function MenuPage() {
   }, [token]);
 
   if (error) return <InvalidTable error={error} />;
-  if (!table) return <FullPageSpinner label="Finding your table" />;
+  if (!table) return <Finding />;
 
   return (
     <CartProvider tableToken={token}>
@@ -37,7 +39,13 @@ export default function MenuPage() {
   );
 }
 
+function Finding() {
+  const { t } = useI18n();
+  return <FullPageSpinner label={t('menu.finding')} />;
+}
+
 function InvalidTable({ error }) {
+  const { t } = useI18n();
   const disabled = error.status === 410;
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-cream-100 px-6 text-center">
@@ -46,30 +54,34 @@ function InvalidTable({ error }) {
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
           <QrCode className="h-7 w-7" />
         </div>
-        <h1 className="text-lg font-extrabold">{disabled ? 'Table not taking orders' : error.status === 404 ? 'QR code not recognised' : 'Something went wrong'}</h1>
+        <h1 className="text-lg font-extrabold">{disabled ? t('invalid.disabledTitle') : error.status === 404 ? t('invalid.notFoundTitle') : t('invalid.errorTitle')}</h1>
         <p className="mt-2 text-sm text-brand-900/60">{error.message}</p>
-        <p className="mt-4 text-xs text-brand-900/45">Please ask a member of staff for help, or scan the QR code on your table again.</p>
+        <p className="mt-4 text-xs text-brand-900/45">{t('invalid.help')}</p>
       </div>
     </div>
   );
 }
 
 function Welcome({ table, settings, onStart }) {
+  const { t } = useI18n();
   return (
     <div className="relative flex min-h-[100svh] flex-col overflow-hidden bg-brand-900 text-cream-50">
       <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-700/60" />
       <div className="pointer-events-none absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-brand-800" />
       <div className="relative flex flex-1 flex-col px-7 pb-10 pt-12">
-        <Logo light />
+        <div className="flex items-start justify-between">
+          <Logo light />
+          <LanguageToggle light />
+        </div>
         <div className="mt-auto">
-          <span className="chip bg-gold-400 px-3 py-1.5 text-sm text-brand-950">Table {table.tableNumber}</span>
+          <span className="chip bg-gold-400 px-3 py-1.5 text-sm text-brand-950">{t('common.table', { n: table.tableNumber })}</span>
           <h1 className="mt-5 font-display text-[2.6rem] font-semibold leading-[1.05]">
-            Welcome to<br />
+            {t('welcome.title')}<br />
             <span className="text-gold-400">{settings?.restaurantName || 'Krishna Hotel & Restaurant'}</span>
           </h1>
-          <p className="mt-4 max-w-xs text-cream-200/80">Browse our pure vegetarian menu and order straight to the kitchen. No app needed.</p>
+          <p className="mt-4 max-w-xs text-cream-200/80">{t('welcome.sub')}</p>
           <Button variant="gold" size="xl" className="mt-8 w-full" onClick={onStart} data-testid="start-ordering">
-            View menu <ChevronRight className="h-5 w-5" />
+            {t('welcome.cta')} <ChevronRight className="h-5 w-5" />
           </Button>
           <p className="mt-4 text-center text-xs text-cream-200/50">{settings?.address || 'Akbarpur, Uttar Pradesh'}</p>
         </div>
@@ -79,6 +91,7 @@ function Welcome({ table, settings, onStart }) {
 }
 
 function TableMenu({ table, tableToken }) {
+  const { t, pick } = useI18n();
   const navigate = useNavigate();
   const cart = useCart();
   const [menu, setMenu] = useState(null);
@@ -130,7 +143,7 @@ function TableMenu({ table, tableToken }) {
       .map((c) => ({
         ...c,
         items: menu.items.filter(
-          (i) => i.category === c.id && (!search || i.name.toLowerCase().includes(search) || (i.description || '').toLowerCase().includes(search))
+          (i) => i.category === c.id && (!search || [i.name, i.nameHi, i.description, i.descriptionHi].some((x) => (x || '').toLowerCase().includes(search)))
         ),
       }))
       .filter((s) => s.items.length > 0);
@@ -189,13 +202,14 @@ function TableMenu({ table, tableToken }) {
         <div className="flex items-center justify-between px-4 pb-2 pt-3">
           <Logo subtitle={false} />
           <div className="flex items-center gap-2">
+            <LanguageToggle />
             {recent.length > 0 && (
               <Link to={`/order/${recent[0].id}`} className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-cream-300 bg-white px-3 text-xs font-bold text-brand-800" data-testid="my-orders">
-                <ReceiptText className="h-4 w-4" /> My orders
+                <ReceiptText className="h-4 w-4" /> {t('menu.myOrders')}
               </Link>
             )}
             <span className="chip bg-brand-900 px-3 py-1.5 text-sm text-cream-50" data-testid="table-number">
-              Table {table.tableNumber}
+              {t('common.table', { n: table.tableNumber })}
             </span>
           </div>
         </div>
@@ -205,9 +219,9 @@ function TableMenu({ table, tableToken }) {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search dishes, e.g. paneer, dosa"
+              placeholder={t('menu.search')}
               className="input h-11 rounded-2xl pl-10 pr-10"
-              aria-label="Search menu"
+              aria-label={t('menu.search')}
               type="search"
             />
             {query && (
@@ -231,7 +245,7 @@ function TableMenu({ table, tableToken }) {
                   activeCat === s.id ? 'bg-brand-900 text-cream-50' : 'bg-white text-brand-900/75 ring-1 ring-cream-300'
                 }`}
               >
-                {s.name}
+                {pick(s, 'name')}
               </button>
             ))}
           </nav>
@@ -240,12 +254,12 @@ function TableMenu({ table, tableToken }) {
 
       {loadError && (
         <div className="m-4 rounded-2xl bg-red-50 p-4 text-sm text-red-700">
-          {loadError} <button type="button" className="font-bold underline" onClick={loadMenu}>Try again</button>
+          {loadError} <button type="button" className="font-bold underline" onClick={loadMenu}>{t('common.tryAgain')}</button>
         </div>
       )}
-      {!menu && !loadError && <FullPageSpinner label="Loading menu" />}
+      {!menu && !loadError && <FullPageSpinner label={t('menu.loading')} />}
 
-      {menu && sections.length === 0 && <EmptyState icon={Search} title="No dishes found" message={search ? `Nothing matches "${query}".` : 'The menu is empty right now.'} />}
+      {menu && sections.length === 0 && <EmptyState icon={Search} title={t('menu.noDishes')} message={search ? t('menu.noMatch', { q: query }) : t('menu.empty')} />}
 
       <main className="space-y-7 px-4 pt-4">
         {sections.map((s) => (
@@ -257,7 +271,7 @@ function TableMenu({ table, tableToken }) {
             }}
           >
             <div className="mb-3">
-              <h2 className="font-display text-2xl font-semibold text-brand-950">{s.name}</h2>
+              <h2 className="font-display text-2xl font-semibold text-brand-950">{pick(s, 'name')}</h2>
               {s.description && !search && <p className="text-sm text-brand-900/55">{s.description}</p>}
             </div>
             <div className="space-y-3">
@@ -267,7 +281,7 @@ function TableMenu({ table, tableToken }) {
             </div>
           </section>
         ))}
-        {menu && <p className="pb-4 pt-2 text-center text-xs text-brand-900/40">All prices in INR, exclusive of GST. 100% vegetarian kitchen.</p>}
+        {menu && <p className="pb-4 pt-2 text-center text-xs text-brand-900/40">{t('menu.footer')}</p>}
       </main>
 
       {cart.count > 0 && (
@@ -283,11 +297,11 @@ function TableMenu({ table, tableToken }) {
                 <ShoppingBag className="h-5 w-5" />
               </span>
               <span className="text-left">
-                <span className="block text-xs text-cream-200/70">{cart.count} item{cart.count > 1 ? 's' : ''}</span>
+                <span className="block text-xs text-cream-200/70">{t(cart.count === 1 ? 'menu.item' : 'menu.items', { n: cart.count })}</span>
                 <span className="block font-extrabold">{formatINR(cart.subtotal)} <span className="text-xs font-medium text-cream-200/60">+ GST</span></span>
               </span>
             </span>
-            <span className="flex items-center gap-1 font-bold">View cart <ChevronRight className="h-5 w-5" /></span>
+            <span className="flex items-center gap-1 font-bold">{t('menu.viewCart')} <ChevronRight className="h-5 w-5" /></span>
           </button>
         </div>
       )}

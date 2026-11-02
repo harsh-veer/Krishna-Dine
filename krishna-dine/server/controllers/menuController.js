@@ -11,6 +11,10 @@ function serializeItem(m) {
     id: m._id.toString(),
     name: m.name,
     description: m.description,
+    nameHi: m.nameHi || '',
+    descriptionHi: m.descriptionHi || '',
+    sizes: (m.sizes || []).map((s) => ({ label: s.label, price: s.price })),
+    addons: (m.addons || []).map((a) => ({ name: a.name, price: a.price })),
     category: cat ? cat._id.toString() : String(m.category),
     categoryName: cat ? cat.name : undefined,
     price: m.price,
@@ -26,6 +30,7 @@ function serializeCategory(c, itemCount) {
   return {
     id: c._id.toString(),
     name: c.name,
+    nameHi: c.nameHi || '',
     slug: c.slug,
     description: c.description,
     image: c.image,
@@ -33,6 +38,12 @@ function serializeCategory(c, itemCount) {
     isActive: c.isActive,
     ...(itemCount !== undefined ? { itemCount } : {}),
   };
+}
+
+/** With portion sizes, the base price is the cheapest size, so menus can show "from Rs X". */
+function withFromPrice(body) {
+  if (Array.isArray(body.sizes) && body.sizes.length) return { ...body, price: Math.min(...body.sizes.map((s) => s.price)) };
+  return body;
 }
 
 const slugify = (s) =>
@@ -61,7 +72,7 @@ exports.listMenu = async (req, res) => {
 exports.createItem = async (req, res) => {
   const cat = await Category.findById(req.body.category);
   if (!cat) throw ApiError.badRequest('Category not found');
-  const item = await MenuItem.create(req.body);
+  const item = await MenuItem.create(withFromPrice(req.body));
   await item.populate('category', 'name');
   emitMenuChanged();
   res.status(201).json({ success: true, data: serializeItem(item) });
@@ -74,7 +85,7 @@ exports.updateItem = async (req, res) => {
     const cat = await Category.findById(req.body.category);
     if (!cat) throw ApiError.badRequest('Category not found');
   }
-  Object.assign(item, req.body);
+  Object.assign(item, withFromPrice(req.body));
   await item.save();
   await item.populate('category', 'name');
   emitMenuChanged();

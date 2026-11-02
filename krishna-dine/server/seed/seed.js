@@ -51,7 +51,7 @@ async function seed({ reset = false, tables = true, log = console.log } = {}) {
   const catIds = {};
   for (const c of data.categories) {
     const slug = slugify(c.name);
-    const doc = await Category.findOneAndUpdate({ slug }, { $setOnInsert: { ...c, slug, isActive: true } }, { upsert: true, new: true });
+    const doc = await Category.findOneAndUpdate({ slug }, { $setOnInsert: { ...c, nameHi: data.hindiNames[c.name] || '', slug, isActive: true } }, { upsert: true, new: true });
     catIds[c.name] = doc._id;
   }
   log(`Categories: ${data.categories.length}`);
@@ -60,7 +60,7 @@ async function seed({ reset = false, tables = true, log = console.log } = {}) {
   for (const [cat, name, description, price, preparationTime] of data.items) {
     const exists = await MenuItem.exists({ name, category: catIds[cat], isDeleted: false });
     if (exists) continue;
-    await MenuItem.create({ name, description, price, preparationTime, category: catIds[cat], isVegetarian: true, isAvailable: true, image: '' });
+    await MenuItem.create({ name, nameHi: data.hindiNames[name] || '', description, price, preparationTime, category: catIds[cat], isVegetarian: true, isAvailable: true, image: '' });
     createdItems += 1;
   }
   log(`Menu items created: ${createdItems} (total defined: ${data.items.length})`);
