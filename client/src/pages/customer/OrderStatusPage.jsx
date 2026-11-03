@@ -88,7 +88,7 @@ export default function OrderStatusPage() {
   const others = myOrders.all().filter((o) => o.tableToken === entry?.tableToken && o.id !== orderId).slice(0, 5);
 
   return (
-    <div className="mx-auto min-h-screen max-w-lg bg-cream-100 pb-10">
+    <div className="mx-auto min-h-screen max-w-lg bg-poster pb-10">
       <header className="flex items-center justify-between px-4 py-3">
         {menuLink ? (
           <Link to={menuLink} className="inline-flex items-center gap-1 rounded-xl px-2 py-2 text-sm font-semibold text-brand-800 hover:bg-cream-200">

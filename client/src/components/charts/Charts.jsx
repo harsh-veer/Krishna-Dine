@@ -2,10 +2,10 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Too
 import { formatINR } from '../../utils/format';
 
 // Single-series charts: one brand hue, thin marks, recessive grid, hover tooltip, no dual axes.
-const INK = '#0B3B2E';
-const SERIES = '#1F6B4A';
-const GRID = '#EDE1C6';
-const tick = { fill: 'rgba(11,59,46,0.55)', fontSize: 12 };
+const INK = '#4A3026';
+const SERIES = '#8B4A2B';
+const GRID = '#EBD5C3';
+const tick = { fill: 'rgba(74,48,38,0.55)', fontSize: 12 };
 
 function ChartTooltip({ active, payload, label, valueKind, labelFormatter }) {
   if (!active || !payload?.length) return null;

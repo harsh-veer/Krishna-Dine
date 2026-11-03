@@ -147,7 +147,7 @@ function TableMenu({ table, tableToken }) {
   return (
     <div className="mx-auto min-h-screen max-w-lg bg-poster pb-32">
       <MenuHero table={table} lastOrderId={recent[0]?.id} />
-      <header className="sticky top-0 z-30 mt-3 border-b border-[#E6D8BD] bg-[#F6EFDF]/95 backdrop-blur">
+      <header className="sticky top-0 z-30 mt-3 border-b border-[#EBD5C3] bg-[#F8ECE0]/95 backdrop-blur">
         <div className="px-4 pb-2">
           <label className="relative block">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-900/40" />
@@ -155,7 +155,7 @@ function TableMenu({ table, tableToken }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('menu.search')}
-              className="input h-11 rounded-2xl border-[#E6D8BD] bg-white pl-10 pr-10"
+              className="input h-11 rounded-2xl border-[#EBD5C3] bg-white pl-10 pr-10"
               aria-label={t('menu.search')}
               type="search"
             />
@@ -177,7 +177,7 @@ function TableMenu({ table, tableToken }) {
                 type="button"
                 onClick={() => jumpTo(s.id)}
                 className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
-                  activeCat === s.id ? 'bg-[#5A5E3A] text-[#FBF7EC] shadow-soft' : 'bg-white text-[#4A4E30]/80 ring-1 ring-[#E6D8BD]'
+                  activeCat === s.id ? 'bg-[#7A4A32] text-[#FFF8F2] shadow-soft' : 'bg-white text-[#4A3026]/80 ring-1 ring-[#EBD5C3]'
                 }`}
               >
                 {pick(s, 'name')}
@@ -206,13 +206,13 @@ function TableMenu({ table, tableToken }) {
             }}
           >
             <div className="mb-3 text-center">
-              <h2 className="font-cormorant text-[1.9rem] font-bold tracking-wide text-[#5A5E3A]">{pick(s, 'name')}</h2>
-              <div className="mx-auto mt-1 flex max-w-[12rem] items-center gap-2 text-[#8E9473]" aria-hidden="true">
-                <span className="h-px flex-1 bg-[#D9BE86]" />
+              <h2 className="font-cormorant text-[1.9rem] font-bold tracking-wide text-[#7A4A32]">{pick(s, 'name')}</h2>
+              <div className="mx-auto mt-1 flex max-w-[12rem] items-center gap-2 text-[#C99B78]" aria-hidden="true">
+                <span className="h-px flex-1 bg-[#E3B994]" />
                 <Leaf className="h-3.5 w-3.5" />
-                <span className="h-px flex-1 bg-[#D9BE86]" />
+                <span className="h-px flex-1 bg-[#E3B994]" />
               </div>
-              {s.description && !search && <p className="mt-1.5 font-jost text-sm text-[#4A4E30]/65">{s.description}</p>}
+              {s.description && !search && <p className="mt-1.5 font-jost text-sm text-[#4A3026]/65">{s.description}</p>}
             </div>
             <div className="space-y-3">
               {s.items.map((item) => (
@@ -225,8 +225,8 @@ function TableMenu({ table, tableToken }) {
         ))}
         {menu && (
           <div className="pb-4 pt-4 text-center">
-            <div className={`text-[1.7rem] text-[#B88F4A] ${lang === 'hi' ? 'font-serif italic' : 'font-script'}`}>{t('poster.footer')}</div>
-            <p className="mt-1 font-jost text-xs text-[#4A4E30]/55">{t('menu.footer')}</p>
+            <div className={`text-[1.7rem] text-[#C4875A] ${lang === 'hi' ? 'font-serif italic' : 'font-script'}`}>{t('poster.footer')}</div>
+            <p className="mt-1 font-jost text-xs text-[#4A3026]/55">{t('menu.footer')}</p>
           </div>
         )}
       </main>
@@ -236,7 +236,7 @@ function TableMenu({ table, tableToken }) {
           <button
             type="button"
             onClick={() => setCartOpen(true)}
-            className="flex w-full animate-pop items-center justify-between rounded-2xl bg-[#5A5E3A] px-5 py-4 text-[#FBF7EC] shadow-lift ring-1 ring-[#D9BE86]/60 transition active:scale-[0.99]"
+            className="flex w-full animate-pop items-center justify-between rounded-2xl bg-[#7A4A32] px-5 py-4 text-[#FFF8F2] shadow-lift ring-1 ring-[#E3B994]/60 transition active:scale-[0.99]"
             data-testid="view-cart"
           >
             <span className="flex items-center gap-3">

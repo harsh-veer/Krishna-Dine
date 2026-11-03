@@ -9,7 +9,7 @@ import { useCart } from '../../context/CartContext';
 export function QtyStepper({ value, onChange, size = 'md', disabled }) {
   const h = size === 'sm' ? 'h-8' : 'h-10';
   return (
-    <div className={`inline-flex ${h} items-center overflow-hidden rounded-xl bg-[#5A5E3A] text-cream-50 shadow-sm`}>
+    <div className={`inline-flex ${h} items-center overflow-hidden rounded-xl bg-[#7A4A32] text-cream-50 shadow-sm`}>
       <button type="button" aria-label="Decrease quantity" onClick={() => onChange(value - 1)} className={`flex ${h} w-9 items-center justify-center hover:bg-brand-800`}>
         <Minus className="h-4 w-4" />
       </button>
@@ -38,8 +38,8 @@ export default function MenuItemCard({ item }) {
           <VegMark veg={item.isVegetarian} />
           {soldOut && <span className="chip bg-red-50 text-red-700">{t('common.soldOut')}</span>}
         </div>
-        <h3 className="mt-1.5 font-cormorant text-xl font-bold leading-snug text-[#3E4228]">{name}</h3>
-        <div className="mt-0.5 font-jost font-semibold text-[#B88F4A]">
+        <h3 className="mt-1.5 font-cormorant text-xl font-bold leading-snug text-[#3A2418]">{name}</h3>
+        <div className="mt-0.5 font-jost font-semibold text-[#C4875A]">
           {item.sizes?.length > 0 && <span className="mr-1 text-xs font-medium text-brand-900/50">{t('menu.from')}</span>}
           {formatINR(item.price)}
         </div>
@@ -61,7 +61,7 @@ export default function MenuItemCard({ item }) {
             <button
               type="button"
               onClick={() => (custom ? setPicking(true) : cart.add(item))}
-              className="relative inline-flex h-10 items-center gap-1 rounded-xl border border-[#B88F4A] bg-white px-5 text-sm font-extrabold uppercase tracking-wide text-[#5A5E3A] shadow-soft transition hover:bg-[#F6EFDF] active:scale-95"
+              className="relative inline-flex h-10 items-center gap-1 rounded-xl border border-[#C4875A] bg-white px-5 text-sm font-extrabold uppercase tracking-wide text-[#7A4A32] shadow-soft transition hover:bg-[#F8ECE0] active:scale-95"
               aria-label={`${t('common.add')} ${name}`}
             >
               {t('common.add')} <Plus className="h-4 w-4" />
