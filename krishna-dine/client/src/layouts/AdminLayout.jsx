@@ -29,7 +29,7 @@ function Sidebar({ onNavigate }) {
             end={n.end}
             onClick={onNavigate}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${isActive ? 'bg-cream-50 text-brand-950 shadow-soft' : 'text-cream-200/80 hover:bg-white/10 hover:text-cream-50'}`
+              `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${isActive ? 'bg-brand-600 text-white shadow-soft' : 'text-cream-200/80 hover:bg-white/10 hover:text-cream-50'}`
             }
           >
             <n.icon className="h-[18px] w-[18px]" /> {n.label}
@@ -66,7 +66,7 @@ export default function AdminLayout() {
   const location = useLocation();
   const current = NAV.find((n) => (n.end ? location.pathname === n.to : location.pathname.startsWith(n.to)));
   return (
-    <div className="min-h-screen bg-cream-100 lg:pl-64">
+    <div className="min-h-screen lg:pl-64">
       <aside className="no-print fixed inset-y-0 left-0 z-40 hidden w-64 lg:block">
         <Sidebar />
       </aside>
@@ -81,7 +81,7 @@ export default function AdminLayout() {
           </button>
         </div>
       )}
-      <header className="no-print sticky top-0 z-30 flex items-center gap-3 border-b border-cream-300/60 bg-cream-100/90 px-4 py-3 backdrop-blur lg:hidden">
+      <header className="no-print sticky top-0 z-30 flex items-center gap-3 border-b border-cream-300/60 bg-cream-100/80 px-4 py-3 backdrop-blur lg:hidden">
         <button type="button" onClick={() => setOpen(true)} className="rounded-xl p-2 hover:bg-cream-200" aria-label="Open menu">
           <MenuIcon className="h-5 w-5" />
         </button>

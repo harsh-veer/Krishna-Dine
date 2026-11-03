@@ -6,7 +6,7 @@ import Logo from '../components/Logo';
 export default function KitchenLayout({ connected, actions, children }) {
   const { user, logout } = useAuth();
   return (
-    <div className="flex min-h-screen flex-col bg-[#F3EEE2]">
+    <div className="flex min-h-screen flex-col bg-poster">
       <header className="sticky top-0 z-30 bg-brand-900 text-cream-50 shadow-lift">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 lg:px-6">
           <div className="flex items-center gap-4">

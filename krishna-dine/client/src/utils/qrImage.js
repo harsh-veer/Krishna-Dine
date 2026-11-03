@@ -5,15 +5,15 @@ import logoUrl from '../assets/logo.png';
 export const POSTER = { W: 900, H: 1800, qr: { x: 270, y: 1090, size: 360 } };
 
 const C = {
-  cream: '#F4ECDD',
-  creamLight: '#FBF7EC',
-  olive: '#5A5E3A',
-  oliveDark: '#4A4E30',
-  sage: '#8E9473',
-  sagePanel: '#E5E3CF',
-  gold: '#B88F4A',
-  goldSoft: '#D9BE86',
-  band: '#6C7150',
+  cream: '#F8EBDF',
+  creamLight: '#FFF8F2',
+  olive: '#7A4A32',
+  oliveDark: '#4A3026',
+  sage: '#C99B78',
+  sagePanel: '#F1DCCB',
+  gold: '#C4875A',
+  goldSoft: '#E3B994',
+  band: '#6F4430',
 };
 
 const SERIF = '"Cormorant Garamond", Georgia, serif';
@@ -186,8 +186,8 @@ export async function buildQrCard(table) {
 
   // Background and arch
   const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#EFE4CF');
-  bg.addColorStop(1, '#E6D8BD');
+  bg.addColorStop(0, '#F6E4D4');
+  bg.addColorStop(1, '#EBD5C3');
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
@@ -237,7 +237,7 @@ export async function buildQrCard(table) {
   text(ctx, 'Fresh, hot and made with love.', 450, 700, { font: `76px ${SCRIPT}`, color: C.gold });
   divider(ctx, 450, 740, 360, C.sage);
   text(ctx, 'SIMPLE. FRESH. PURE VEG.', 450, 802, { font: `500 30px ${SANS}`, color: C.oliveDark, spacing: 7 });
-  text(ctx, 'Order from your table, straight to our kitchen.', 450, 846, { font: `400 25px ${SANS}`, color: 'rgba(74,78,48,0.8)' });
+  text(ctx, 'Order from your table, straight to our kitchen.', 450, 846, { font: `400 25px ${SANS}`, color: 'rgba(74,48,38,0.8)' });
 
   // Scan panel
   ctx.fillStyle = C.sagePanel;
@@ -281,7 +281,7 @@ export async function buildQrCard(table) {
   cols.forEach((col, i) => {
     col.icon(ctx, col.x, 1560, 20, C.sage);
     text(ctx, col.a, col.x, 1614, { font: `600 20px ${SANS}`, color: C.oliveDark, spacing: 3 });
-    text(ctx, col.b, col.x, 1642, { font: `400 21px ${SANS}`, color: 'rgba(74,78,48,0.75)' });
+    text(ctx, col.b, col.x, 1642, { font: `400 21px ${SANS}`, color: 'rgba(74,48,38,0.75)' });
     if (i > 0) {
       ctx.strokeStyle = C.goldSoft;
       ctx.lineWidth = 1.5;
@@ -295,7 +295,7 @@ export async function buildQrCard(table) {
   // Footer band
   ctx.fillStyle = C.band;
   ctx.fillRect(0, 1668, W, H - 1668);
-  text(ctx, 'Good food. Happy moments.', 450, 1726, { font: `54px ${SCRIPT}`, color: '#F6EFDF' });
+  text(ctx, 'Good food. Happy moments.', 450, 1726, { font: `54px ${SCRIPT}`, color: '#F8ECE0' });
   ctx.restore();
 
   return canvas.toDataURL('image/png');

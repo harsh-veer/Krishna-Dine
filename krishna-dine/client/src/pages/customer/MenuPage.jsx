@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { ChevronRight, QrCode, ReceiptText, Search, ShoppingBag, X } from 'lucide-react';
+import { ChevronRight, Leaf, QrCode, Search, ShoppingBag, X } from 'lucide-react';
 import { CartProvider, useCart } from '../../context/CartContext';
 import { publicApi } from '../../services/endpoints';
 import { errorMessage } from '../../services/api';
 import { createSocket } from '../../services/socket';
 import Logo from '../../components/Logo';
 import LanguageToggle from '../../components/LanguageToggle';
-import PosterWelcome from '../../components/PosterWelcome';
+import MenuHero from '../../components/MenuHero';
+import Reveal from '../../components/Reveal';
 import { useI18n } from '../../i18n';
 import MenuItemCard from './MenuItemCard';
 import CartSheet from './CartSheet';
@@ -64,7 +65,7 @@ function InvalidTable({ error }) {
 }
 
 function TableMenu({ table, tableToken }) {
-  const { t, pick } = useI18n();
+  const { t, pick, lang } = useI18n();
   const navigate = useNavigate();
   const cart = useCart();
   const [menu, setMenu] = useState(null);
@@ -73,14 +74,6 @@ function TableMenu({ table, tableToken }) {
   const [query, setQuery] = useState('');
   const [activeCat, setActiveCat] = useState(null);
   const [cartOpen, setCartOpen] = useState(false);
-  const welcomeKey = `kd_welcomed_${tableToken}`;
-  const [welcomed, setWelcomed] = useState(() => {
-    try {
-      return sessionStorage.getItem(welcomeKey) === '1';
-    } catch {
-      return true;
-    }
-  });
   const search = useDebounce(query.trim().toLowerCase(), 150);
   const sectionRefs = useRef({});
   const chipRefs = useRef({});
@@ -124,7 +117,7 @@ function TableMenu({ table, tableToken }) {
 
   // Highlight the category chip for the section in view.
   useEffect(() => {
-    if (!welcomed || !sections.length) return undefined;
+    if (!sections.length) return undefined;
     const obs = new IntersectionObserver(
       (entries) => {
         const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
@@ -134,7 +127,7 @@ function TableMenu({ table, tableToken }) {
     );
     Object.values(sectionRefs.current).forEach((el) => el && obs.observe(el));
     return () => obs.disconnect();
-  }, [sections, welcomed]);
+  }, [sections]);
 
   useEffect(() => {
     if (activeCat && chipRefs.current[activeCat]) chipRefs.current[activeCat].scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
@@ -145,25 +138,6 @@ function TableMenu({ table, tableToken }) {
     if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 128, behavior: 'smooth' });
   };
 
-  if (!welcomed) {
-    return (
-      <PosterWelcome
-        table={table}
-        tableToken={tableToken}
-        settings={settings}
-        onStart={() => {
-          try {
-            sessionStorage.setItem(welcomeKey, '1');
-          } catch {
-            /* ignore */
-          }
-          setWelcomed(true);
-          window.scrollTo(0, 0);
-        }}
-      />
-    );
-  }
-
   const onPlaced = ({ order, trackingToken }) => {
     myOrders.add({ id: order.id, token: trackingToken, orderNumber: order.orderNumber, tableToken, tableNumber: table.tableNumber, createdAt: order.createdAt });
     setCartOpen(false);
@@ -171,22 +145,9 @@ function TableMenu({ table, tableToken }) {
   };
 
   return (
-    <div className="mx-auto min-h-screen max-w-lg bg-cream-100 pb-32">
-      <header className="sticky top-0 z-30 border-b border-cream-300/60 bg-cream-100/95 backdrop-blur">
-        <div className="flex items-center justify-between px-4 pb-2 pt-3">
-          <Logo subtitle={false} />
-          <div className="flex items-center gap-2">
-            <LanguageToggle />
-            {recent.length > 0 && (
-              <Link to={`/order/${recent[0].id}`} className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-cream-300 bg-white px-3 text-xs font-bold text-brand-800" data-testid="my-orders">
-                <ReceiptText className="h-4 w-4" /> {t('menu.myOrders')}
-              </Link>
-            )}
-            <span className="chip bg-brand-900 px-3 py-1.5 text-sm text-cream-50" data-testid="table-number">
-              {t('common.table', { n: table.tableNumber })}
-            </span>
-          </div>
-        </div>
+    <div className="mx-auto min-h-screen max-w-lg bg-poster pb-32">
+      <MenuHero table={table} lastOrderId={recent[0]?.id} />
+      <header className="sticky top-0 z-30 mt-3 border-b border-[#EBD5C3] bg-[#F8ECE0]/95 backdrop-blur">
         <div className="px-4 pb-2">
           <label className="relative block">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-900/40" />
@@ -194,7 +155,7 @@ function TableMenu({ table, tableToken }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('menu.search')}
-              className="input h-11 rounded-2xl pl-10 pr-10"
+              className="input h-11 rounded-2xl border-[#EBD5C3] bg-white pl-10 pr-10"
               aria-label={t('menu.search')}
               type="search"
             />
@@ -216,7 +177,7 @@ function TableMenu({ table, tableToken }) {
                 type="button"
                 onClick={() => jumpTo(s.id)}
                 className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
-                  activeCat === s.id ? 'bg-brand-900 text-cream-50' : 'bg-white text-brand-900/75 ring-1 ring-cream-300'
+                  activeCat === s.id ? 'bg-[#7A4A32] text-[#FFF8F2] shadow-soft' : 'bg-white text-[#4A3026]/80 ring-1 ring-[#EBD5C3]'
                 }`}
               >
                 {pick(s, 'name')}
@@ -244,18 +205,30 @@ function TableMenu({ table, tableToken }) {
               sectionRefs.current[s.id] = el;
             }}
           >
-            <div className="mb-3">
-              <h2 className="font-display text-2xl font-semibold text-brand-950">{pick(s, 'name')}</h2>
-              {s.description && !search && <p className="text-sm text-brand-900/55">{s.description}</p>}
+            <div className="mb-3 text-center">
+              <h2 className="font-cormorant text-[1.9rem] font-bold tracking-wide text-[#7A4A32]">{pick(s, 'name')}</h2>
+              <div className="mx-auto mt-1 flex max-w-[12rem] items-center gap-2 text-[#C99B78]" aria-hidden="true">
+                <span className="h-px flex-1 bg-[#E3B994]" />
+                <Leaf className="h-3.5 w-3.5" />
+                <span className="h-px flex-1 bg-[#E3B994]" />
+              </div>
+              {s.description && !search && <p className="mt-1.5 font-jost text-sm text-[#4A3026]/65">{s.description}</p>}
             </div>
             <div className="space-y-3">
               {s.items.map((item) => (
-                <MenuItemCard key={item.id} item={item} />
+                <Reveal key={item.id}>
+                  <MenuItemCard item={item} />
+                </Reveal>
               ))}
             </div>
           </section>
         ))}
-        {menu && <p className="pb-4 pt-2 text-center text-xs text-brand-900/40">{t('menu.footer')}</p>}
+        {menu && (
+          <div className="pb-4 pt-4 text-center">
+            <div className={`text-[1.7rem] text-[#C4875A] ${lang === 'hi' ? 'font-serif italic' : 'font-script'}`}>{t('poster.footer')}</div>
+            <p className="mt-1 font-jost text-xs text-[#4A3026]/55">{t('menu.footer')}</p>
+          </div>
+        )}
       </main>
 
       {cart.count > 0 && (
@@ -263,7 +236,7 @@ function TableMenu({ table, tableToken }) {
           <button
             type="button"
             onClick={() => setCartOpen(true)}
-            className="flex w-full animate-pop items-center justify-between rounded-2xl bg-brand-900 px-5 py-4 text-cream-50 shadow-lift transition active:scale-[0.99]"
+            className="flex w-full animate-pop items-center justify-between rounded-2xl bg-[#7A4A32] px-5 py-4 text-[#FFF8F2] shadow-lift ring-1 ring-[#E3B994]/60 transition active:scale-[0.99]"
             data-testid="view-cart"
           >
             <span className="flex items-center gap-3">
