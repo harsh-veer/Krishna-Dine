@@ -71,3 +71,10 @@
 .poster-qr { animation: qr-pulse 2.6s ease-in-out infinite; }
 .poster-qr:active { transform: scale(0.97); }
 @media (prefers-reduced-motion: reduce) { .poster-qr { animation: none; } }
+
+/* Customer menu template */
+.bg-poster { background: linear-gradient(180deg, #F1E7D2 0%, #F6EFDF 35%, #F4ECDD 100%); }
+.reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.reveal-in { opacity: 1; transform: none; }
+.poster-card { background: #FFFDF8; border: 1px solid #E6D8BD; border-radius: 1.25rem; box-shadow: 0 1px 2px rgba(90, 94, 58, 0.06), 0 6px 18px -10px rgba(90, 94, 58, 0.25); }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }

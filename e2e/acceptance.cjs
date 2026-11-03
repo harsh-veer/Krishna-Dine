@@ -96,12 +96,11 @@ async function staffLogin(page, acc) {
     const phoneCtx = await browser.newContext({ ...devices['iPhone 13'] });
     const phone = await phoneCtx.newPage();
     await phone.goto(decoded.data);
-    await phone.waitForSelector('[data-testid=start-ordering]');
-    await shot(phone, '04-customer-welcome');
+    await phone.waitForSelector('[data-testid=table-number]');
+    await shot(phone, '04-customer-menu-opened');
     ok('Customer opens the scanned QR URL on an iPhone 13 viewport');
 
     // ---------- 5. Customer sees the correct table number
-    await phone.click('[data-testid=start-ordering]');
     const tableText = await phone.textContent('[data-testid=table-number]');
     assert(tableText.trim() === 'Table 01', `table chip shows Table 01 (got "${tableText}")`);
     ok('Customer sees "Table 01"');

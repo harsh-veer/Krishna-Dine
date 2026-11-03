@@ -22,12 +22,11 @@ const call = async (method, path, token, body) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
   await page.goto(`http://localhost:5173/menu/${table.uniqueQrToken}`);
-  await page.getByTestId('start-ordering').waitFor();
+  await page.getByTestId('table-number').waitFor();
 
   // Hindi
   await page.getByRole('button', { name: 'हिं' }).first().click();
-  ok((await page.getByTestId('start-ordering').innerText()).includes('मेन्यू देखें'), 'welcome screen switches to Hindi');
-  await page.getByTestId('start-ordering').click();
+  ok((await page.getByTestId('table-number').innerText()).includes('टेबल'), 'page switches to Hindi');
   await page.getByText('पनीर टिक्का').first().waitFor();
   ok(true, 'item and category names show in Hindi');
   await page.screenshot({ path: `${SHOTS}/f1-menu-hindi.png` });
