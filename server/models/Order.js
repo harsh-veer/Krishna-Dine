@@ -55,6 +55,13 @@ const orderSchema = new mongoose.Schema(
     paymentMethod: { type: String, enum: [...PAYMENT_METHODS, null], default: null },
     paidAt: Date,
 
+    // Customer feedback, left once after the order is served.
+    feedback: {
+      rating: { type: Number, min: 1, max: 5 },
+      comment: { type: String, trim: true, maxlength: 500, default: '' },
+      at: Date,
+    },
+
     invoiceNumber: { type: String },
     billGeneratedAt: Date,
     isClosed: { type: Boolean, default: false },

@@ -134,6 +134,12 @@ export default function OrderDetailPage() {
                 ))}
               </tbody>
             </table>
+            {o.feedback && (
+              <div className="mt-3 rounded-xl bg-gold-400/15 px-3 py-2 text-sm" data-testid="order-feedback">
+                <span className="font-bold">Customer rating: {'★'.repeat(o.feedback.rating)}{'☆'.repeat(5 - o.feedback.rating)}</span>
+                {o.feedback.comment && <span className="block text-brand-900/75">“{o.feedback.comment}”</span>}
+              </div>
+            )}
             {o.specialInstructions && (
               <div className="m-4 flex gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
                 <MessageSquareText className="h-4 w-4 shrink-0" /> {o.specialInstructions}

@@ -64,6 +64,24 @@ exports.get = async (req, res) => {
   return res.json({ success: true, data: toPublicOrder(order) });
 };
 
+/** Customer rates the meal once the order is served. Needs the tracking token from checkout. */
+exports.feedback = async (req, res) => {
+  const token = req.get('x-order-token') || req.query.token;
+  if (!token || !verifyTrackingToken(req.params.id, token)) throw ApiError.unauthorized('You can only rate your own orders');
+  const order = await Order.findOneAndUpdate(
+    { _id: req.params.id, orderStatus: 'served', 'feedback.rating': { $exists: false } },
+    { $set: { feedback: { rating: req.body.rating, comment: req.body.comment || '', at: new Date() } } },
+    { new: true }
+  );
+  if (!order) {
+    const existing = await Order.findById(req.params.id).select('orderStatus feedback');
+    if (!existing) throw ApiError.notFound('Order not found');
+    if (existing.feedback && existing.feedback.rating) throw ApiError.conflict('Thank you, feedback was already received for this order');
+    throw ApiError.conflict('You can rate the order once it has been served');
+  }
+  res.json({ success: true, data: toPublicOrder(order) });
+};
+
 exports.updateStatus = async (req, res) => {
   const { order, changed } = await orderService.updateStatus(req.params.id, req.body, req.user);
   res.json({ success: true, data: toStaffOrder(order), meta: { changed } });

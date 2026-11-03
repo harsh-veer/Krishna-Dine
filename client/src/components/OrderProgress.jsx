@@ -1,5 +1,6 @@
 import { Check, ChefHat, Clock, ConciergeBell, HandPlatter, ThumbsUp } from 'lucide-react';
 import { formatTime } from '../utils/format';
+import { useI18n } from '../i18n';
 
 const STEPS = [
   { status: 'pending', label: 'Order placed', icon: Clock },
@@ -10,6 +11,7 @@ const STEPS = [
 ];
 
 export default function OrderProgress({ order }) {
+  const { t } = useI18n();
   const idx = STEPS.findIndex((s) => s.status === order.orderStatus);
   const atByStatus = Object.fromEntries((order.statusHistory || []).map((h) => [h.status, h.at]));
   return (
@@ -29,7 +31,7 @@ export default function OrderProgress({ order }) {
               <Icon className="h-5 w-5" />
             </span>
             <div className="pt-2">
-              <div className={`font-semibold ${done || current ? 'text-brand-950' : 'text-brand-900/40'}`}>{step.label}</div>
+              <div className={`font-semibold ${done || current ? 'text-brand-950' : 'text-brand-900/40'}`}>{step.status === 'pending' ? t('step.placed') : t(`status.${step.status}`)}</div>
               {atByStatus[step.status] && <div className="text-xs text-brand-900/50">{formatTime(atByStatus[step.status])}</div>}
             </div>
           </li>

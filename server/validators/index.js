@@ -47,6 +47,7 @@ const tables = {
 const categories = {
   create: z.object({
     name: trimmed(60).min(1, 'Name is required'),
+    nameHi: trimmed(60).optional().default(''),
     description: trimmed(300).optional().default(''),
     image: imagePath.optional().default(''),
     displayOrder: z.coerce.number().int().min(0).max(1000).optional().default(0),
@@ -54,6 +55,7 @@ const categories = {
   }),
   update: z.object({
     name: trimmed(60).min(1).optional(),
+    nameHi: trimmed(60).optional(),
     description: trimmed(300).optional(),
     image: imagePath.optional(),
     displayOrder: z.coerce.number().int().min(0).max(1000).optional(),
@@ -62,7 +64,13 @@ const categories = {
   listQuery: z.object({ all: boolish.optional() }),
 };
 
+const sizeOpt = z.object({ label: trimmed(30).min(1), price: z.coerce.number().min(0).max(100000) });
+const addonOpt = z.object({ name: trimmed(40).min(1), price: z.coerce.number().min(0).max(10000) });
 const menuItemBase = {
+  nameHi: trimmed(100).optional().default(''),
+  descriptionHi: trimmed(500).optional().default(''),
+  sizes: z.array(sizeOpt).max(6).optional().default([]),
+  addons: z.array(addonOpt).max(12).optional().default([]),
   name: trimmed(100).min(1, 'Name is required'),
   description: trimmed(500).optional().default(''),
   category: objectId,
@@ -78,6 +86,10 @@ const menu = {
   update: z.object({
     name: menuItemBase.name.optional(),
     description: trimmed(500).optional(),
+    nameHi: trimmed(100).optional(),
+    descriptionHi: trimmed(500).optional(),
+    sizes: z.array(sizeOpt).max(6).optional(),
+    addons: z.array(addonOpt).max(12).optional(),
     category: objectId.optional(),
     price: z.coerce.number().min(0).max(100000).optional(),
     image: imagePath.optional(),
@@ -108,7 +120,7 @@ const orders = {
     specialInstructions: trimmed(500).optional().default(''),
     idempotencyKey: z.string().trim().min(8).max(64).regex(/^[A-Za-z0-9_-]+$/).optional(),
     items: z
-      .array(z.object({ menuItemId: objectId, quantity: z.coerce.number().int().min(1).max(50), notes: trimmed(120).optional().default('') }))
+      .array(z.object({ menuItemId: objectId, quantity: z.coerce.number().int().min(1).max(50), size: trimmed(30).optional().default(''), addons: z.array(trimmed(40)).max(12).optional().default([]), notes: trimmed(120).optional().default('') }))
       .min(1, 'Your cart is empty')
       .max(40, 'Too many different items in one order'),
   }),
@@ -132,6 +144,7 @@ const orders = {
   purge: z.object({ olderThanDays: z.coerce.number().int().min(1, 'Choose at least 1 day').max(3650), dryRun: z.boolean().optional().default(false) }),
   tableParams: z.object({ tableId: objectId }),
   tableQuery: z.object({ includeClosed: boolish.optional() }),
+  feedback: z.object({ rating: z.number().int().min(1).max(5), comment: trimmed(500).optional().default('') }),
   trackQuery: z.object({ token: z.string().max(100).optional() }),
   bill: z.object({ applyServiceCharge: z.boolean().optional() }),
   payment: z.object({ paymentMethod: z.enum(PAYMENT_METHODS), transactionReference: trimmed(100).optional().default(''), note: trimmed(200).optional().default('') }),

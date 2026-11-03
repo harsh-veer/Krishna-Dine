@@ -336,3 +336,54 @@ test('order deletion: admin only, finished orders only, payments removed, old-or
   assert.equal(await Order.countDocuments({ _id: oldId }), 0);
   assert.equal((await api('POST', '/orders/purge-old', { token: adminToken, body: { olderThanDays: 0 } })).status, 400);
 });
+
+test('item options: sizes and extras are priced on the server and snapshotted', async () => {
+  const t = (await api('GET', '/tables', { token: adminToken })).data.data.find((x) => x.tableNumber === '03');
+  const item = (await api('GET', '/menu')).data.data.items[2];
+  const upd = await api('PUT', `/menu/${item.id}`, {
+    token: adminToken,
+    body: { nameHi: 'पनीर', sizes: [{ label: 'Half', price: 100 }, { label: 'Full', price: 180 }], addons: [{ name: 'Extra cheese', price: 30 }] },
+  });
+  assert.equal(upd.status, 200);
+  assert.equal(upd.data.data.price, 100, 'base price becomes the cheapest size');
+  assert.equal(upd.data.data.nameHi, 'पनीर');
+
+  const place = (line) => api('POST', '/orders', { body: { qrToken: t.uniqueQrToken, customerName: 'Opt', items: [{ menuItemId: item.id, quantity: 2, ...line }] } });
+  assert.equal((await place({})).status, 400, 'a size is required');
+  assert.equal((await place({ size: 'Jumbo' })).status, 400, 'unknown size');
+  assert.equal((await place({ size: 'Full', addons: ['Gold leaf'] })).status, 400, 'unknown extra');
+  const ok = await place({ size: 'Full', addons: ['Extra cheese'], notes: 'less spicy' });
+  assert.equal(ok.status, 201);
+  const line = ok.data.data.order.items[0];
+  assert.equal(line.price, 210);
+  assert.equal(line.lineTotal, 420);
+  assert.match(line.name, /\(Full\) \+ Extra cheese/);
+  assert.equal(line.notes, 'less spicy');
+
+  // Same dish in two sizes stays as two lines.
+  const two = await api('POST', '/orders', {
+    body: { qrToken: t.uniqueQrToken, customerName: 'Opt', items: [{ menuItemId: item.id, quantity: 1, size: 'Half' }, { menuItemId: item.id, quantity: 1, size: 'Full' }] },
+  });
+  assert.equal(two.data.data.order.items.length, 2);
+});
+
+test('feedback: only the owner, only after served, only once', async () => {
+  const t = (await api('GET', '/tables', { token: adminToken })).data.data.find((x) => x.tableNumber === '03');
+  const item = (await api('GET', '/menu')).data.data.items[7];
+  const placed = (await api('POST', '/orders', { body: { qrToken: t.uniqueQrToken, customerName: 'Fb', items: [{ menuItemId: item.id, quantity: 1 }] } })).data.data;
+  const id = placed.order.id;
+  const rate = (token, body) => api('POST', `/orders/${id}/feedback`, { body, headers: token ? { 'X-Order-Token': token } : {} });
+
+  assert.equal((await rate(null, { rating: 5 })).status, 401);
+  assert.equal((await rate(placed.trackingToken, { rating: 5 })).status, 409, 'not served yet');
+  for (const status of ['accepted', 'preparing', 'ready', 'served']) await api('PATCH', `/orders/${id}/status`, { token: kitchenToken, body: { status } });
+  assert.equal((await rate(placed.trackingToken, { rating: 9 })).status, 400);
+  const ok = await rate(placed.trackingToken, { rating: 4, comment: 'Tasty' });
+  assert.equal(ok.status, 200);
+  assert.equal(ok.data.data.feedback.rating, 4);
+  assert.equal((await rate(placed.trackingToken, { rating: 1 })).status, 409, 'only once');
+
+  const dash = await api('GET', '/reports/dashboard', { token: adminToken });
+  assert.ok(dash.data.data.feedback.count >= 1);
+  assert.ok(dash.data.data.feedback.recent.some((r) => r.comment === 'Tasty'));
+});

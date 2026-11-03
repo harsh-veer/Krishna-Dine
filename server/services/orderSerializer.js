@@ -33,6 +33,7 @@ function base(o) {
     isClosed: !!o.isClosed,
     createdAt: o.createdAt,
     updatedAt: o.updatedAt,
+    feedback: o.feedback && o.feedback.rating ? { rating: o.feedback.rating, comment: o.feedback.comment || '', at: o.feedback.at } : null,
     version: o.__v ?? 0,
   };
 }

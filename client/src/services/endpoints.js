@@ -12,6 +12,7 @@ export const publicApi = {
   settings: () => unwrap(api.get('/public/settings', { skipAuth: true })),
   menu: () => unwrap(api.get('/menu', { skipAuth: true })),
   placeOrder: (body) => unwrap(api.post('/orders', body, { skipAuth: true })),
+  feedback: (id, token, body) => unwrap(api.post(`/orders/${id}/feedback`, body, { headers: { 'X-Order-Token': token }, skipAuth: true })),
   order: (id, token) => unwrap(api.get(`/orders/${id}`, { headers: { 'X-Order-Token': token }, skipAuth: true })),
 };
 

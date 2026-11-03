@@ -5,8 +5,20 @@ const menuItemSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 100 },
     description: { type: String, trim: true, maxlength: 500, default: '' },
+    nameHi: { type: String, trim: true, maxlength: 100, default: '' },
+    descriptionHi: { type: String, trim: true, maxlength: 500, default: '' },
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
     price: { type: Number, required: true, min: 0, max: 100000 },
+    // Optional portion sizes (e.g. Half / Full). When present, the customer must pick one and its price replaces `price`.
+    sizes: {
+      type: [new mongoose.Schema({ label: { type: String, required: true, trim: true, maxlength: 30 }, price: { type: Number, required: true, min: 0, max: 100000 } }, { _id: false })],
+      default: [],
+    },
+    // Optional extras (e.g. Extra cheese +Rs 30) that add to the unit price.
+    addons: {
+      type: [new mongoose.Schema({ name: { type: String, required: true, trim: true, maxlength: 40 }, price: { type: Number, required: true, min: 0, max: 10000 } }, { _id: false })],
+      default: [],
+    },
     image: { type: String, trim: true, default: '' },
     isVegetarian: { type: Boolean, default: true },
     isAvailable: { type: Boolean, default: true },
