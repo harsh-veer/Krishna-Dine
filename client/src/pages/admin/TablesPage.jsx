@@ -4,13 +4,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import { Armchair, Download, ExternalLink, FileArchive, Pencil, Plus, Power, Printer, QrCode, RefreshCw, Trash2 } from 'lucide-react';
+import { Armchair, Copy, Download, ExternalLink, FileArchive, Maximize2, Pencil, Plus, Power, Printer, QrCode, RefreshCw, Share2, Trash2, X } from 'lucide-react';
 import { PageHeader } from '../../layouts/AdminLayout';
 import { Badge, Button, ConfirmDialog, EmptyState, Field, Input, Modal, Select, Spinner } from '../../components/ui';
 import { tableApi } from '../../services/endpoints';
 import { downloadFile, errorMessage, tokenStore } from '../../services/api';
 import { createSocket } from '../../services/socket';
 import { downloadQrCard } from '../../utils/qrImage';
+import QrPoster from '../../components/QrPoster';
 
 const schema = z.object({
   tableNumber: z.string().trim().min(1, 'Table number is required').max(20).regex(/^[A-Za-z0-9 _-]+$/, 'Letters, numbers, spaces or dashes'),
@@ -204,22 +205,49 @@ function TableModal({ table, onClose, onSaved }) {
 
 function QrModal({ table, onClose, onRegenerate }) {
   const [busy, setBusy] = useState(false);
+  const [full, setFull] = useState(false);
+  const canShare = typeof navigator !== 'undefined' && !!navigator.share;
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(table.qrCodeUrl);
+      toast.success('Menu link copied');
+    } catch {
+      toast.error('Could not copy. Long-press the link to copy it.');
+    }
+  };
+  const share = () => navigator.share({ title: `Krishna Dine, Table ${table.tableNumber}`, url: table.qrCodeUrl }).catch(() => {});
   return (
-    <Modal open onClose={onClose} title={`Table ${table.tableNumber} QR code`} description="Customers scan this to open the menu for this table." size="sm">
-      <div className="text-center">
-        <div className="mx-auto w-fit rounded-3xl border border-cream-300 bg-white p-3 shadow-soft">
-          <img src={table.qrDataUrl} alt={`QR code for table ${table.tableNumber}`} className="h-60 w-60" data-testid="qr-image" />
+    <>
+      <Modal open onClose={onClose} title={`Table ${table.tableNumber} QR code`} description="Customers scan this to open the menu for this table. Tap the code to try it." size="md">
+        <div className="text-center">
+          <QrPoster table={table} className="max-w-[300px]" />
+          {!table.isActive && <p className="mt-3 text-sm font-semibold text-red-600">This table is disabled. The code will not accept orders.</p>}
+          <a href={table.qrCodeUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex max-w-full items-center gap-1 break-all text-xs font-medium text-brand-700 hover:underline" data-testid="qr-link">
+            {table.qrCodeUrl} <ExternalLink className="h-3 w-3 shrink-0" />
+          </a>
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <Button icon={Download} loading={busy} onClick={async () => { setBusy(true); try { await downloadQrCard(table); } finally { setBusy(false); } }} data-testid="download-qr">Download PNG</Button>
+            <Link to={`/admin/tables/print?ids=${table.id}`} target="_blank"><Button variant="secondary" icon={Printer} className="w-full">Print</Button></Link>
+            <Button variant="secondary" icon={Copy} onClick={copy} data-testid="copy-link">Copy link</Button>
+            {canShare ? (
+              <Button variant="secondary" icon={Share2} onClick={share}>Share</Button>
+            ) : (
+              <Button variant="secondary" icon={Maximize2} onClick={() => setFull(true)} data-testid="qr-fullscreen">Show full screen</Button>
+            )}
+          </div>
+          {canShare && <Button variant="ghost" size="sm" icon={Maximize2} className="mt-2" onClick={() => setFull(true)}>Show full screen</Button>}
+          <Button variant="ghost" size="sm" icon={RefreshCw} className="mt-2" onClick={onRegenerate}>Regenerate code</Button>
         </div>
-        {!table.isActive && <p className="mt-3 text-sm font-semibold text-red-600">This table is disabled. The code will not accept orders.</p>}
-        <a href={table.qrCodeUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex max-w-full items-center gap-1 break-all text-xs font-medium text-brand-700 hover:underline" data-testid="qr-link">
-          {table.qrCodeUrl} <ExternalLink className="h-3 w-3 shrink-0" />
-        </a>
-        <div className="mt-5 grid grid-cols-2 gap-2">
-          <Button icon={Download} loading={busy} onClick={async () => { setBusy(true); try { await downloadQrCard(table); } finally { setBusy(false); } }} data-testid="download-qr">Download PNG</Button>
-          <Link to={`/admin/tables/print?ids=${table.id}`} target="_blank"><Button variant="secondary" icon={Printer} className="w-full">Print</Button></Link>
+      </Modal>
+      {full && (
+        <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-brand-950/90 p-4" onClick={() => setFull(false)} role="dialog" aria-modal="true" aria-label="QR poster full screen">
+          <button type="button" className="absolute right-4 top-4 rounded-xl bg-white/10 p-2 text-white" aria-label="Close" onClick={() => setFull(false)}><X className="h-6 w-6" /></button>
+          <div className="w-full" style={{ maxWidth: 'min(92vw, 52vh)' }} onClick={(e) => e.stopPropagation()}>
+            <QrPoster table={table} />
+          </div>
+          <p className="mt-3 text-sm text-white/70">Show this on a tablet or screen at the table. Tap anywhere outside to close.</p>
         </div>
-        <Button variant="ghost" size="sm" icon={RefreshCw} className="mt-2" onClick={onRegenerate}>Regenerate code</Button>
-      </div>
-    </Modal>
+      )}
+    </>
   );
 }

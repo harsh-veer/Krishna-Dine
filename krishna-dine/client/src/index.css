@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; }
+  body { @apply bg-cream-100 text-brand-950 font-sans antialiased; }
+  :focus-visible { @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-cream-100; }
+  input, textarea, select { @apply text-base sm:text-sm; }
+}
+
+@layer components {
+  .card { @apply bg-white rounded-2xl border border-cream-300/70 shadow-soft; }
+  .input {
+    @apply block w-full rounded-xl border border-cream-300 bg-white px-3.5 py-2.5 text-brand-950 placeholder:text-brand-900/40
+      transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none disabled:bg-cream-100;
+  }
+  .label { @apply mb-1.5 block text-sm font-semibold text-brand-900; }
+  .field-error { @apply mt-1 text-xs font-medium text-red-600; }
+  .chip { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold; }
+  .scrollbar-none { scrollbar-width: none; }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+}
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff !important; }
+  @page { margin: 12mm; }
+}
+
+/* Interactive QR poster */
+.qr-shine {
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.35) 50%, transparent 65%);
+  background-size: 250% 100%;
+  background-position: var(--shine-x, -50%) 0;
+  mix-blend-mode: soft-light;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.qr-poster:hover .qr-shine { opacity: 1; }
+.qr-pulse { animation: qr-pulse 2.6s ease-in-out infinite; cursor: pointer; }
+.qr-pulse:hover { animation: none; box-shadow: 0 0 0 4px rgba(184, 143, 74, 0.55); }
+@keyframes qr-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(184, 143, 74, 0.45); }
+  50% { box-shadow: 0 0 0 10px rgba(184, 143, 74, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .qr-pulse { animation: none; }
+  .qr-poster { transition: none; }
+}
+
+/* Poster welcome screen */
+.font-cormorant { font-family: 'Cormorant Garamond', Georgia, serif; }
+.font-script { font-family: 'Great Vibes', 'Brush Script MT', cursive; }
+.font-jost { font-family: Jost, 'Plus Jakarta Sans', Arial, sans-serif; }
+.poster-rise { opacity: 0; animation: poster-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+@keyframes poster-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+.poster-sway { transform-origin: 50% 100%; animation: poster-sway 5s ease-in-out infinite; }
+@keyframes poster-sway { 0%, 100% { rotate: -2deg; } 50% { rotate: 3deg; } }
+.poster-cta { position: relative; overflow: hidden; }
+.poster-cta::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.28) 50%, transparent 65%);
+  transform: translateX(-120%); animation: poster-glint 3.6s ease-in-out 1.2s infinite;
+}
+@keyframes poster-glint { 0%, 55% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+@media (prefers-reduced-motion: reduce) {
+  .poster-rise { animation: none; opacity: 1; }
+  .poster-sway, .poster-cta::after { animation: none; }
+}
+.poster-qr { animation: qr-pulse 2.6s ease-in-out infinite; }
+.poster-qr:active { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) { .poster-qr { animation: none; } }

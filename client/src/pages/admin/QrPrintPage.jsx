@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Printer } from 'lucide-react';
 import { tableApi } from '../../services/endpoints';
 import { errorMessage } from '../../services/api';
-import { LogoMark } from '../../components/Logo';
+import QrPoster from '../../components/QrPoster';
 import { Button, Spinner } from '../../components/ui';
 
 /** Print sheet: one QR card per table, two per row on A4. Use the browser's "Save as PDF" for a file. */
@@ -32,16 +32,9 @@ export default function QrPrintPage() {
       </div>
       <div className="mx-auto grid max-w-4xl grid-cols-2 gap-6 print:max-w-none print:gap-4">
         {tables.map((t) => (
-          <div key={t.id} className="break-inside-avoid rounded-3xl border-2 border-brand-900 bg-white p-6 text-center print:rounded-2xl" data-testid="print-card">
-            <div className="flex items-center justify-center gap-2">
-              <LogoMark className="h-9 w-9" />
-              <div className="font-display text-2xl font-semibold text-brand-950">Krishna <span className="text-brand-600">Dine</span></div>
-            </div>
-            <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-900/55">Krishna Hotel &amp; Restaurant · Akbarpur</div>
-            <img src={t.qrDataUrl} alt={`QR for table ${t.tableNumber}`} className="mx-auto mt-4 w-56" />
-            <div className="mt-2 text-4xl font-extrabold text-brand-950">Table {t.tableNumber}</div>
-            <div className="mt-1 text-sm text-brand-900/70">Scan to view the menu and order</div>
-            {!t.isActive && <div className="mt-1 text-xs font-bold text-red-600">Disabled table</div>}
+          <div key={t.id} className="break-inside-avoid" data-testid="print-card">
+            <QrPoster table={t} interactive={false} />
+            {!t.isActive && <div className="mt-1 text-center text-xs font-bold text-red-600">Disabled table</div>}
           </div>
         ))}
       </div>

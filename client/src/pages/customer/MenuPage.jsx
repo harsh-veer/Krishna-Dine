@@ -7,6 +7,7 @@ import { errorMessage } from '../../services/api';
 import { createSocket } from '../../services/socket';
 import Logo from '../../components/Logo';
 import LanguageToggle from '../../components/LanguageToggle';
+import PosterWelcome from '../../components/PosterWelcome';
 import { useI18n } from '../../i18n';
 import MenuItemCard from './MenuItemCard';
 import CartSheet from './CartSheet';
@@ -57,34 +58,6 @@ function InvalidTable({ error }) {
         <h1 className="text-lg font-extrabold">{disabled ? t('invalid.disabledTitle') : error.status === 404 ? t('invalid.notFoundTitle') : t('invalid.errorTitle')}</h1>
         <p className="mt-2 text-sm text-brand-900/60">{error.message}</p>
         <p className="mt-4 text-xs text-brand-900/45">{t('invalid.help')}</p>
-      </div>
-    </div>
-  );
-}
-
-function Welcome({ table, settings, onStart }) {
-  const { t } = useI18n();
-  return (
-    <div className="relative flex min-h-[100svh] flex-col overflow-hidden bg-brand-900 text-cream-50">
-      <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-700/60" />
-      <div className="pointer-events-none absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-brand-800" />
-      <div className="relative flex flex-1 flex-col px-7 pb-10 pt-12">
-        <div className="flex items-start justify-between">
-          <Logo light />
-          <LanguageToggle light />
-        </div>
-        <div className="mt-auto">
-          <span className="chip bg-gold-400 px-3 py-1.5 text-sm text-brand-950">{t('common.table', { n: table.tableNumber })}</span>
-          <h1 className="mt-5 font-display text-[2.6rem] font-semibold leading-[1.05]">
-            {t('welcome.title')}<br />
-            <span className="text-gold-400">{settings?.restaurantName || 'Krishna Hotel & Restaurant'}</span>
-          </h1>
-          <p className="mt-4 max-w-xs text-cream-200/80">{t('welcome.sub')}</p>
-          <Button variant="gold" size="xl" className="mt-8 w-full" onClick={onStart} data-testid="start-ordering">
-            {t('welcome.cta')} <ChevronRight className="h-5 w-5" />
-          </Button>
-          <p className="mt-4 text-center text-xs text-cream-200/50">{settings?.address || 'Akbarpur, Uttar Pradesh'}</p>
-        </div>
       </div>
     </div>
   );
@@ -174,8 +147,9 @@ function TableMenu({ table, tableToken }) {
 
   if (!welcomed) {
     return (
-      <Welcome
+      <PosterWelcome
         table={table}
+        tableToken={tableToken}
         settings={settings}
         onStart={() => {
           try {
