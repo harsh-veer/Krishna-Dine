@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Ban, Banknote, CheckCircle2, ChefHat, ConciergeBell, CreditCard, HandPlatter, Lock, MessageSquareText, Printer, ReceiptText, RefreshCw, Smartphone, ThumbsUp, Trash2, TriangleAlert } from 'lucide-react';
+import { ArrowLeft, Ban, Banknote, CheckCircle2, ChefHat, ConciergeBell, CreditCard, HandPlatter, Lock, MessageSquareText, Pencil, Printer, ReceiptText, RefreshCw, Smartphone, ThumbsUp, Trash2, TriangleAlert } from 'lucide-react';
 import { orderApi, paymentApi } from '../../services/endpoints';
 import { errorMessage, tokenStore } from '../../services/api';
 import { createSocket, ORDER_EVENTS } from '../../services/socket';
@@ -105,6 +105,9 @@ export default function OrderDetailPage() {
             <Button icon={next.icon} loading={busy === 'status'} onClick={() => run('status', () => orderApi.setStatus(o.id, next.status), `Order ${STATUS_META[next.status].label.toLowerCase()}`)} data-testid="detail-advance">
               {next.label}
             </Button>
+          )}
+          {!cancelled && !o.isClosed && !paid && (
+            <Link to={`/admin/orders/${o.id}/edit`}><Button variant="secondary" icon={Pencil} data-testid="edit-order">Edit order</Button></Link>
           )}
           {(o.isClosed || cancelled) && (
             <Button variant="secondary" className="text-red-600" icon={Trash2} onClick={() => setDeleteOpen(true)} data-testid="delete-order">Delete order</Button>

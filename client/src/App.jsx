@@ -16,6 +16,7 @@ const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
 const DashboardPage = lazy(() => import('./pages/admin/DashboardPage'));
 const OrdersPage = lazy(() => import('./pages/admin/OrdersPage'));
 const OrderDetailPage = lazy(() => import('./pages/admin/OrderDetailPage'));
+const OrderEditorPage = lazy(() => import('./pages/admin/OrderEditorPage'));
 const InvoicePage = lazy(() => import('./pages/admin/InvoicePage'));
 const AdminMenuPage = lazy(() => import('./pages/admin/MenuPage'));
 const TablesPage = lazy(() => import('./pages/admin/TablesPage'));
@@ -46,7 +47,9 @@ export default function App() {
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<DashboardPage />} />
                 <Route path="orders" element={<OrdersPage />} />
+                <Route path="orders/new" element={<OrderEditorPage mode="new" />} />
                 <Route path="orders/:id" element={<OrderDetailPage />} />
+                <Route path="orders/:id/edit" element={<OrderEditorPage mode="edit" />} />
                 <Route path="menu" element={<AdminMenuPage />} />
                 <Route path="tables" element={<TablesPage />} />
                 <Route path="reports" element={<ReportsPage />} />

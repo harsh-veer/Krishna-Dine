@@ -387,3 +387,46 @@ test('feedback: only the owner, only after served, only once', async () => {
   assert.ok(dash.data.data.feedback.count >= 1);
   assert.ok(dash.data.data.feedback.recent.some((r) => r.comment === 'Tasty'));
 });
+
+test('admin can place and edit orders; kitchen cannot; paid orders are locked', async () => {
+  const tables = (await api('GET', '/tables', { token: adminToken })).data.data;
+  const t = tables.find((x) => x.tableNumber === '03');
+  const menu = (await api('GET', '/menu')).data.data.items;
+  const [a, b] = [menu[0], menu[1]];
+
+  const body = { tableId: t.id, customerName: 'Walk-in guest', items: [{ menuItemId: a.id, quantity: 2 }, { menuItemId: b.id, quantity: 1, notes: 'no onion' }] };
+  assert.equal((await api('POST', '/orders/admin', { token: kitchenToken, body })).status, 403);
+  assert.equal((await api('POST', '/orders/admin', { body })).status, 401);
+  const placed = await api('POST', '/orders/admin', { token: adminToken, body });
+  assert.equal(placed.status, 201, JSON.stringify(placed.data));
+  const id = placed.data.data.id;
+  assert.equal(placed.data.data.statusHistory[0].byName.length > 0, true);
+  const before = placed.data.data.subtotal;
+  assert.equal(before, a.price * 2 + b.price);
+
+  // Edit: change qty of line 0, remove line 1, add a new item.
+  const c = menu[9];
+  const bad = await api('PATCH', `/orders/${id}`, { token: adminToken, body: { items: [{ lineIndex: 9, quantity: 1 }] } });
+  assert.equal(bad.status, 400);
+  const edited = await api('PATCH', `/orders/${id}`, { token: adminToken, body: { customerName: 'Edited', items: [{ lineIndex: 0, quantity: 3 }, { menuItemId: c.id, quantity: 1 }] } });
+  assert.equal(edited.status, 200, JSON.stringify(edited.data));
+  assert.equal(edited.data.data.customerName, 'Edited');
+  assert.equal(edited.data.data.items.length, 2);
+  assert.equal(edited.data.data.subtotal, a.price * 3 + c.price);
+  assert.equal(edited.data.data.statusHistory.at(-1).note, 'Order edited by staff');
+  assert.equal((await api('PATCH', `/orders/${id}`, { token: kitchenToken, body: { customerName: 'X' } })).status, 403);
+  assert.equal((await api('PATCH', `/orders/${id}`, { token: adminToken, body: { items: [] } })).status, 400);
+
+  // Editing keeps the original snapshot price even if the menu price changed.
+  await api('PUT', `/menu/${a.id}`, { token: adminToken, body: { price: a.price + 50 } });
+  const again = await api('PATCH', `/orders/${id}`, { token: adminToken, body: { items: [{ lineIndex: 0, quantity: 1 }] } });
+  assert.equal(again.data.data.items[0].price, a.price);
+
+  // Bill, pay: locked afterwards.
+  await api('POST', `/orders/${id}/bill`, { token: adminToken, body: {} });
+  const billed = await api('PATCH', `/orders/${id}`, { token: adminToken, body: { items: [{ lineIndex: 0, quantity: 2 }] } });
+  assert.equal(billed.status, 200, 'unpaid billed orders can still be edited and re-totalled');
+  assert.equal(billed.data.data.invoiceNumber != null, true);
+  await api('POST', `/orders/${id}/payments`, { token: adminToken, body: { paymentMethod: 'cash' } });
+  assert.equal((await api('PATCH', `/orders/${id}`, { token: adminToken, body: { items: [{ lineIndex: 0, quantity: 5 }] } })).status, 409);
+});

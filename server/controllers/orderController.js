@@ -82,6 +82,18 @@ exports.feedback = async (req, res) => {
   res.json({ success: true, data: toPublicOrder(order) });
 };
 
+/** Admin places an order on behalf of a table (walk-in, phone or a customer who cannot scan). */
+exports.createByStaff = async (req, res) => {
+  const { tableId, ...rest } = req.body;
+  const { order } = await orderService.createOrder(rest, { tableId, actor: req.user });
+  res.status(201).json({ success: true, data: toStaffOrder(order) });
+};
+
+exports.edit = async (req, res) => {
+  const order = await orderService.editOrder(req.params.id, req.body, req.user);
+  res.json({ success: true, data: toStaffOrder(order) });
+};
+
 exports.updateStatus = async (req, res) => {
   const { order, changed } = await orderService.updateStatus(req.params.id, req.body, req.user);
   res.json({ success: true, data: toStaffOrder(order), meta: { changed } });

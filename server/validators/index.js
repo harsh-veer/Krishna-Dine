@@ -145,6 +145,31 @@ const orders = {
   tableParams: z.object({ tableId: objectId }),
   tableQuery: z.object({ includeClosed: boolish.optional() }),
   feedback: z.object({ rating: z.number().int().min(1).max(5), comment: trimmed(500).optional().default('') }),
+  adminCreate: z.object({
+    tableId: objectId,
+    customerName: trimmed(60).optional().default('Walk-in'),
+    customerPhone: z.string().trim().optional().default('').transform((v) => v.replace(/[\s-]/g, '')).refine((v) => v === '' || /^(\+91)?[6-9]\d{9}$/.test(v), 'Enter a valid 10-digit Indian mobile number'),
+    specialInstructions: trimmed(500).optional().default(''),
+    items: z
+      .array(z.object({ menuItemId: objectId, quantity: z.coerce.number().int().min(1).max(50), size: trimmed(30).optional().default(''), addons: z.array(trimmed(40)).max(12).optional().default([]), notes: trimmed(120).optional().default('') }))
+      .min(1, 'Add at least one item')
+      .max(40),
+  }),
+  edit: z.object({
+    customerName: trimmed(60).min(1).optional(),
+    customerPhone: z.string().trim().transform((v) => v.replace(/[\s-]/g, '')).refine((v) => v === '' || /^(\+91)?[6-9]\d{9}$/.test(v), 'Enter a valid 10-digit Indian mobile number').optional(),
+    specialInstructions: trimmed(500).optional(),
+    items: z
+      .array(
+        z.union([
+          z.object({ lineIndex: z.coerce.number().int().min(0).max(100), quantity: z.coerce.number().int().min(1).max(50), notes: trimmed(120).optional() }),
+          z.object({ menuItemId: objectId, quantity: z.coerce.number().int().min(1).max(50), size: trimmed(30).optional().default(''), addons: z.array(trimmed(40)).max(12).optional().default([]), notes: trimmed(120).optional().default('') }),
+        ])
+      )
+      .min(1, 'An order needs at least one item')
+      .max(60)
+      .optional(),
+  }),
   trackQuery: z.object({ token: z.string().max(100).optional() }),
   bill: z.object({ applyServiceCharge: z.boolean().optional() }),
   payment: z.object({ paymentMethod: z.enum(PAYMENT_METHODS), transactionReference: trimmed(100).optional().default(''), note: trimmed(200).optional().default('') }),

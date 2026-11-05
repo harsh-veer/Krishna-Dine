@@ -37,24 +37,13 @@ async function refreshTableStatus(tableId) {
 }
 
 /**
- * Creates an order for the table identified by `qrToken`. Prices always come from the database.
- * `idempotencyKey` (client generated UUID) makes retries and double taps return the same order.
+ * Turns requested items into priced order lines. Prices, sizes and extras always come from the database.
+ * Customers cannot order sold-out items; staff (enforceAvailability=false) can, since they know what is in the kitchen.
  */
-async function createOrder(input) {
-  const { qrToken, customerName, customerPhone = '', specialInstructions = '', idempotencyKey } = input;
-  const table = await resolveActiveTable(qrToken);
-
-  if (idempotencyKey) {
-    const existing = await Order.findOne({ idempotencyKey }).select('+idempotencyKey');
-    if (existing) {
-      if (String(existing.table) !== String(table._id)) throw ApiError.conflict('Duplicate request');
-      return { order: existing, trackingToken: trackingTokenFor(existing._id.toString()), replayed: true };
-    }
-  }
-
+async function priceLines(inputItems, { enforceAvailability = true } = {}) {
   // Merge duplicate lines of the same item (notes are concatenated).
   const merged = new Map();
-  for (const line of input.items) {
+  for (const line of inputItems) {
     const addons = [...new Set(line.addons || [])].sort();
     const key = [String(line.menuItemId), line.size || '', addons.join('|')].join('::');
     const prev = merged.get(key);
@@ -78,7 +67,7 @@ async function createOrder(input) {
   const lines = [];
   for (const line of merged.values()) {
     const item = byId.get(line.menuItemId);
-    if (!item || !item.isAvailable || !activeCats.has(String(item.category))) {
+    if (!item || (enforceAvailability && !item.isAvailable) || !activeCats.has(String(item.category))) {
       unavailable.push({ menuItemId: line.menuItemId, name: item ? item.name : 'Unknown item' });
       continue;
     }
@@ -117,6 +106,34 @@ async function createOrder(input) {
     );
   }
 
+  return lines;
+}
+
+/**
+ * Creates an order for the table identified by `qrToken`. Prices always come from the database.
+ * `idempotencyKey` (client generated UUID) makes retries and double taps return the same order.
+ */
+async function createOrder(input, { tableId, actor } = {}) {
+  const { qrToken, customerName, customerPhone = '', specialInstructions = '', idempotencyKey } = input;
+  let table;
+  if (tableId) {
+    table = await Table.findById(tableId);
+    if (!table) throw ApiError.notFound('Table not found');
+    if (!table.isActive) throw ApiError.gone('This table is disabled. Enable it first.');
+  } else {
+    table = await resolveActiveTable(qrToken);
+  }
+
+  if (idempotencyKey) {
+    const existing = await Order.findOne({ idempotencyKey }).select('+idempotencyKey');
+    if (existing) {
+      if (String(existing.table) !== String(table._id)) throw ApiError.conflict('Duplicate request');
+      return { order: existing, trackingToken: trackingTokenFor(existing._id.toString()), replayed: true };
+    }
+  }
+
+  const lines = await priceLines(input.items, { enforceAvailability: !actor });
+
   const settings = await Settings.get();
   const totals = computeTotals(lines, {
     gstRate: settings.gstRate,
@@ -139,7 +156,7 @@ async function createOrder(input) {
       specialInstructions,
       ...totals,
       orderStatus: ORDER_STATUS.PENDING,
-      statusHistory: [{ status: ORDER_STATUS.PENDING, at: now, byName: 'Customer' }],
+      statusHistory: [{ status: ORDER_STATUS.PENDING, at: now, byName: actor ? actor.name : 'Customer', ...(actor ? { by: actor._id, note: 'Order placed by staff' } : {}) }],
       idempotencyKey: idempotencyKey || undefined,
       localDate: dateKey,
     });
@@ -210,6 +227,55 @@ async function updateStatus(orderId, { status, reason }, user) {
  * Orders still in progress, or served but not yet closed, are skipped so a live order or an
  * unsettled bill can never be removed by accident. Returns which ids were deleted or skipped.
  */
+/**
+ * Staff edit an order that is still open and unpaid: change items, quantities, notes and customer details.
+ * Lines carrying `lineIndex` keep their original snapshot price; new lines are priced from the menu.
+ * Totals are recomputed with the rates the order already uses. A pending UPI attempt is voided because its amount changed.
+ */
+async function editOrder(orderId, input, user) {
+  const order = await Order.findById(orderId);
+  if (!order) throw ApiError.notFound('Order not found');
+  if (order.isClosed) throw ApiError.conflict('This order is closed and cannot be edited');
+  if (order.orderStatus === ORDER_STATUS.CANCELLED) throw ApiError.conflict('A cancelled order cannot be edited');
+  if (order.paymentStatus === 'paid') throw ApiError.conflict('This order is already paid and cannot be edited');
+
+  if (input.items) {
+    const kept = [];
+    const fresh = [];
+    for (const line of input.items) {
+      if (line.lineIndex !== undefined) {
+        const old = order.items[line.lineIndex];
+        if (!old) throw ApiError.badRequest('One of the order lines no longer exists. Reload the order and try again.');
+        kept.push({
+          menuItem: old.menuItem,
+          name: old.name,
+          price: old.price,
+          quantity: line.quantity,
+          isVegetarian: old.isVegetarian,
+          notes: (line.notes ?? old.notes ?? '').slice(0, 120),
+        });
+      } else {
+        fresh.push(line);
+      }
+    }
+    const added = fresh.length ? await priceLines(fresh, { enforceAvailability: false }) : [];
+    const lines = [...kept, ...added];
+    if (!lines.length) throw ApiError.badRequest('An order needs at least one item. Cancel the order instead.');
+    const settings = await Settings.get();
+    const totals = computeTotals(lines, { gstRate: order.gstRate, serviceChargeRate: order.serviceChargeRate, roundTotal: settings.roundTotal });
+    Object.assign(order, totals);
+    if (order.invoiceNumber) order.billGeneratedAt = new Date();
+  }
+  if (input.customerName !== undefined) order.customerName = input.customerName;
+  if (input.customerPhone !== undefined) order.customerPhone = input.customerPhone;
+  if (input.specialInstructions !== undefined) order.specialInstructions = input.specialInstructions;
+  order.statusHistory.push({ status: order.orderStatus, at: new Date(), by: user._id, byName: user.name, note: 'Order edited by staff' });
+  await order.save();
+  await Payment.updateMany({ order: order._id, paymentStatus: 'pending' }, { $set: { paymentStatus: 'failed', note: 'Order was edited, amount changed' } });
+  emitOrderEvent('order-updated', order, { reason: 'edited' });
+  return order;
+}
+
 async function deleteOrders(ids) {
   const orders = await Order.find({ _id: { $in: ids } }).select('orderNumber orderStatus isClosed table');
   const found = new Map(orders.map((o) => [String(o._id), o]));
@@ -232,4 +298,5 @@ async function deleteOrders(ids) {
   return { deleted: deletable.map((o) => ({ id: o._id.toString(), orderNumber: o.orderNumber })), skipped };
 }
 
-module.exports = { createOrder, updateStatus, deleteOrders, resolveActiveTable, refreshTableStatus };
+module.exports = {
+  editOrder, createOrder, updateStatus, deleteOrders, resolveActiveTable, refreshTableStatus };

@@ -64,12 +64,14 @@ router.delete('/categories/:id', authenticate, ADMIN, validate({ params: v.idPar
 
 // ---- Orders
 router.post('/orders', orderLimiter, validate({ body: v.orders.create }), a(orders.create));
+router.post('/orders/admin', authenticate, ADMIN, validate({ body: v.orders.adminCreate }), a(orders.createByStaff));
 router.get('/orders', authenticate, STAFF, validate({ query: v.orders.listQuery }), a(orders.list));
 router.post('/orders/bulk-delete', authenticate, ADMIN, validate({ body: v.orders.bulkDelete }), a(orders.bulkDelete));
 router.post('/orders/purge-old', authenticate, ADMIN, validate({ body: v.orders.purge }), a(orders.purgeOld));
 router.get('/orders/table/:tableId', authenticate, STAFF, validate({ params: v.orders.tableParams, query: v.orders.tableQuery }), a(orders.byTable));
 router.get('/orders/:id', publicLimiter, optionalAuth, validate({ params: v.idParams, query: v.orders.trackQuery }), a(orders.get));
 router.post('/orders/:id/feedback', publicLimiter, validate({ params: v.idParams, body: v.orders.feedback }), a(orders.feedback));
+router.patch('/orders/:id', authenticate, ADMIN, validate({ params: v.idParams, body: v.orders.edit }), a(orders.edit));
 router.patch('/orders/:id/status', authenticate, STAFF, validate({ params: v.idParams, body: v.orders.status }), a(orders.updateStatus));
 
 router.delete('/orders/:id', authenticate, ADMIN, validate({ params: v.idParams }), a(orders.remove));

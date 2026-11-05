@@ -53,6 +53,8 @@ export const orderApi = {
   pay: (id, body) => unwrap(api.post(`/orders/${id}/payments`, body)),
   close: (id) => unwrap(api.post(`/orders/${id}/close`)),
   remove: (id) => unwrap(api.delete(`/orders/${id}`)),
+  createByAdmin: (body) => unwrap(api.post('/orders/admin', body)),
+  edit: (id, body) => unwrap(api.patch(`/orders/${id}`, body)),
   bulkDelete: (ids) => unwrap(api.post('/orders/bulk-delete', { ids })),
   purgeOld: (olderThanDays, dryRun = false) => unwrap(api.post('/orders/purge-old', { olderThanDays, dryRun })),
 };

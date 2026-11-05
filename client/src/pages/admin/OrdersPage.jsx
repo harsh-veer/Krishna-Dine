@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ChevronLeft, ChevronRight, ReceiptText, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, ReceiptText, RefreshCw, Search, Trash2 } from 'lucide-react';
 import { PageHeader } from '../../layouts/AdminLayout';
 import StatusBadge, { PaymentBadge } from '../../components/StatusBadge';
 import { Button, ConfirmDialog, EmptyState, Input, Modal, Select, Spinner } from '../../components/ui';
@@ -130,6 +130,7 @@ export default function OrdersPage() {
         description="Filter orders, open one to see details, generate its bill and record payment."
         actions={
           <>
+            <Link to="/admin/orders/new"><Button icon={Plus} data-testid="new-order">New order</Button></Link>
             <Button variant="secondary" icon={Trash2} onClick={() => setPurgeOpen(true)} data-testid="purge-old">Clean up old orders</Button>
             <Button variant="secondary" icon={RefreshCw} onClick={load}>Refresh</Button>
           </>
