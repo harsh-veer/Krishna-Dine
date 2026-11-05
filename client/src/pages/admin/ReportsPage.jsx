@@ -41,7 +41,7 @@ export default function ReportsPage() {
 
   return (
     <>
-      <PageHeader title="Reports" description="Sales, orders and popular dishes. Amounts include GST; cancelled orders are excluded from sales." actions={<Button icon={FileDown} onClick={exportCsv} loading={exporting} disabled={!report} data-testid="export-csv">Export CSV</Button>} />
+      <PageHeader title="Reports" description="Sales, orders and popular dishes. No GST is charged; cancelled orders are excluded from sales." actions={<Button icon={FileDown} onClick={exportCsv} loading={exporting} disabled={!report} data-testid="export-csv">Export CSV</Button>} />
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <Tabs value={type} onChange={setType} tabs={[{ value: 'daily', label: 'Daily' }, { value: 'weekly', label: 'Weekly' }, { value: 'monthly', label: 'Monthly' }]} />
         {type === 'monthly' ? (
@@ -62,7 +62,7 @@ export default function ReportsPage() {
           <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
             <StatCard label="Total orders" value={s.totalOrders} icon={ReceiptText} hint={`${s.completedOrders} served · ${s.cancelledOrders} cancelled`} />
             <StatCard label="Gross sales" value={formatINR(s.revenue)} icon={IndianRupee} tone="gold" hint={`Avg. ${formatINR(s.averageOrderValue)} per order`} />
-            <StatCard label="GST" value={formatINR(s.tax)} icon={Percent} tone="blue" hint={`Service charge ${formatINR(s.serviceCharge)}`} />
+            <StatCard label="Service charge" value={formatINR(s.serviceCharge)} icon={Percent} tone="blue" hint="Collected on bills" />
             <StatCard label="Collected" value={formatINR(s.collected)} icon={Wallet} tone="green" hint={`${formatINR(s.outstanding)} outstanding`} />
           </div>
           <div className="mt-6 grid gap-6 xl:grid-cols-3">
@@ -90,7 +90,7 @@ export default function ReportsPage() {
             ) : (
               <table className="w-full text-sm">
                 <thead className="bg-cream-100 text-left text-xs font-bold uppercase tracking-wider text-brand-900/50">
-                  <tr><th className="px-5 py-2.5">#</th><th className="px-3 py-2.5">Item</th><th className="px-3 py-2.5 text-right">Quantity</th><th className="px-5 py-2.5 text-right">Sales (before tax)</th></tr>
+                  <tr><th className="px-5 py-2.5">#</th><th className="px-3 py-2.5">Item</th><th className="px-3 py-2.5 text-right">Quantity</th><th className="px-5 py-2.5 text-right">Sales</th></tr>
                 </thead>
                 <tbody className="divide-y divide-cream-200">
                   {report.topItems.map((t, i) => (
@@ -105,11 +105,11 @@ export default function ReportsPage() {
               <div className="px-5 py-4 font-bold">Day by day</div>
               <table className="w-full text-sm">
                 <thead className="bg-cream-100 text-left text-xs font-bold uppercase tracking-wider text-brand-900/50">
-                  <tr><th className="px-5 py-2.5">Date</th><th className="px-3 py-2.5 text-right">Orders</th><th className="px-3 py-2.5 text-right">Cancelled</th><th className="px-3 py-2.5 text-right">GST</th><th className="px-5 py-2.5 text-right">Sales</th></tr>
+                  <tr><th className="px-5 py-2.5">Date</th><th className="px-3 py-2.5 text-right">Orders</th><th className="px-3 py-2.5 text-right">Cancelled</th><th className="px-5 py-2.5 text-right">Sales</th></tr>
                 </thead>
                 <tbody className="divide-y divide-cream-200">
                   {report.daily.map((d) => (
-                    <tr key={d.date}><td className="px-5 py-2.5">{dayShort(d.date)}</td><td className="px-3 py-2.5 text-right tabular-nums">{d.orders}</td><td className="px-3 py-2.5 text-right tabular-nums">{d.cancelled}</td><td className="px-3 py-2.5 text-right tabular-nums">{formatINR(d.tax)}</td><td className="px-5 py-2.5 text-right font-semibold tabular-nums">{formatINR(d.revenue)}</td></tr>
+                    <tr key={d.date}><td className="px-5 py-2.5">{dayShort(d.date)}</td><td className="px-3 py-2.5 text-right tabular-nums">{d.orders}</td><td className="px-3 py-2.5 text-right tabular-nums">{d.cancelled}</td><td className="px-5 py-2.5 text-right font-semibold tabular-nums">{formatINR(d.revenue)}</td></tr>
                   ))}
                 </tbody>
               </table>

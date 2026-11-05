@@ -149,7 +149,7 @@ async function staffLogin(page, acc) {
     }, orderNumber);
     assert(saved && saved.orderNumber === orderNumber && saved.tableNumber === '01', 'order persisted with table 01');
     assert(saved.subtotal === 249 + 149 * 2 + 59 * 3, `server-side subtotal is correct (${saved.subtotal})`);
-    ok(`Order saved: table ${saved.tableNumber}, subtotal ₹${saved.subtotal}, total ₹${saved.totalAmount} (GST ${saved.gstRate}%)`);
+    ok(`Order saved: table ${saved.tableNumber}, subtotal ₹${saved.subtotal}, total ₹${saved.totalAmount} (no GST)`);
 
     // ---------- 10. Kitchen receives the order instantly
     const card = kitchen.locator(`[data-testid=kds-order][data-order-number="${orderNumber}"]`);
@@ -200,7 +200,7 @@ async function staffLogin(page, acc) {
     await admin.click('[data-testid=generate-bill]');
     await admin.waitForSelector('[data-testid=invoice-number]');
     const invoiceNo = (await admin.textContent('[data-testid=invoice-number]')).trim();
-    await admin.click('[data-testid=method-cash]');
+    await admin.click('[data-testid=method-upi]');
     await admin.click('[data-testid=record-payment]');
     await admin.waitForSelector('[data-testid=payment-paid]');
     await admin.click('[data-testid=close-order]');
@@ -211,7 +211,7 @@ async function staffLogin(page, acc) {
     const invText = await invoice.textContent('[data-testid=invoice]');
     assert(invText.includes(invoiceNo) && invText.includes('Paneer Tikka') && invText.includes('PAID'), 'invoice is itemised and paid');
     await invoice.screenshot({ path: path.join(SHOTS, '16-invoice.png'), fullPage: true });
-    ok(`Admin views the order, generates bill ${invoiceNo}, records cash payment, closes it and prints the invoice`);
+    ok(`Admin views the order, generates bill ${invoiceNo}, records a UPI payment (no UTR), closes it and prints the invoice`);
 
     // Extra: the customer's final screen shows Paid.
     await phone.waitForSelector('text=Paid');

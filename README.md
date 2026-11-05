@@ -2,7 +2,7 @@
 
 QR-based ordering, kitchen display and billing for **Krishna Hotel and Restaurant, Akbarpur, Uttar Pradesh**.
 
-Customers scan the QR code on their table, browse the menu, and place an order from their phone (no app). The order is saved in MongoDB and appears on the kitchen display instantly, with a sound. Every status change the kitchen makes shows up live on the customer's phone. Admins manage the menu, tables and QR codes, staff, billing (GST, service charge, printable invoices) and reports.
+Customers scan the QR code on their table, browse the menu, and place an order from their phone (no app). The order is saved in MongoDB and appears on the kitchen display instantly, with a sound. Every status change the kitchen makes shows up live on the customer's phone. Admins manage the menu, tables and QR codes, staff, billing (optional service charge, printable invoices) and reports.
 
 This is a standalone application with its own frontend, backend and database. It is not connected to the hotel website. Because the API is a plain REST + Socket.IO service, the website can link to it or embed it later.
 
@@ -123,7 +123,7 @@ Both accounts are created with **"must change password"** set. The server blocks
 1. Each table has a QR code that opens `https://<your-domain>/menu/<token>`. The token is 144 bits of random data, not a table number, so it cannot be guessed.
 2. The app validates the token (`GET /api/public/tables/:token`), shows a welcome screen with the table number, then the menu by category with search, veg markers, availability and prep times.
 3. The cart lives on the phone, scoped to that table. At checkout the customer adds cooking instructions, their name and an optional mobile number.
-4. `POST /api/orders` sends only the QR token, item ids and quantities. The **server** looks up the table, checks every item is still available, and calculates prices, GST and totals from the database. Any price the client sends is ignored.
+4. `POST /api/orders` sends only the QR token, item ids and quantities. The **server** looks up the table, checks every item is still available, and calculates prices and totals from the database. Any price the client sends is ignored.
 5. The order is saved first, then broadcast to the kitchen. The customer gets the order number and a secret **tracking token**, which lets only that phone follow the order live.
 
 ### Kitchen display
@@ -139,9 +139,9 @@ Both accounts are created with **"must change password"** set. The server blocks
 - **Orders & billing:** filter by date, table, status, payment status and search; open an order to see items, timeline, status actions, the bill and payments. **Deleting history:** tick finished orders (closed or cancelled) and use *Delete selected*, delete one from its detail page, or use *Clean up old orders* to remove everything finished that is older than 7 to 365 days. Deletion is permanent, asks for confirmation, removes the order's payments too, and never touches open orders. Deleted orders drop out of reports, so export the monthly CSV first if you need the figures.
 - **Menu:** add, edit and delete items (soft delete), upload photos, set price, category, description, veg flag, prep time and availability; manage categories (order, visibility).
 - **Tables & QR:** add and edit tables, see status and open orders, view, download (PNG card with table number) and print QR codes individually or in bulk (print sheet or ZIP of PNGs), regenerate a code (old printouts stop working), disable or enable a table.
-- **Reports:** daily, weekly and monthly sales, orders, GST, collected, hourly or daily chart, popular items, payment methods; **Export CSV**.
+- **Reports:** daily, weekly and monthly sales, orders, collected, hourly or daily chart, popular items, payment methods; **Export CSV**.
 - **Staff:** add admins or kitchen staff, change role, activate or deactivate, reset passwords. Changing role or deactivating someone signs them out everywhere.
-- **Settings:** restaurant name, address, phone, GSTIN, GST rate, service charge, rounding, invoice footer, UPI ID, payment gateway status.
+- **Settings:** restaurant name, address, phone, service charge, rounding, invoice footer, UPI ID, payment gateway status.
 
 ### Order statuses
 `pending → accepted → preparing → ready → served`, or `cancelled` (with reason) from any state before served. Transitions are enforced on the server with atomic conditional updates, so two kitchen screens tapping the same button cannot double-apply a change or send duplicate events. An order is **closed** by an admin after it is served and paid, which frees the table.
@@ -159,7 +159,7 @@ Auth: send `Authorization: Bearer <token>` (the login response also sets an http
 | `GET /api/auth/me` | staff | Current user |
 | `POST /api/auth/change-password` | staff | Change own password (revokes other sessions) |
 | `GET /api/public/tables/:token` | public | Resolve a QR token to its table |
-| `GET /api/public/settings` | public | Name, address, GST rate for the customer app |
+| `GET /api/public/settings` | public | Name, address, service charge for the customer app |
 | `GET /api/menu` | public (`?all=true` for staff) | Categories and items |
 | `GET /api/categories` | public (`?all=true` for staff) | Categories |
 | `POST /api/menu` · `PUT /api/menu/:id` · `DELETE /api/menu/:id` | admin | Manage items |
@@ -178,7 +178,7 @@ Auth: send `Authorization: Bearer <token>` (the login response also sets an http
 | `GET /api/orders/table/:tableId` | admin, kitchen | Orders for a table (`?includeClosed=true`) |
 | `GET /api/orders/:id/bill` · `POST /api/orders/:id/bill` | admin | View / generate bill (`{ applyServiceCharge? }`) |
 | `POST /api/orders/:id/payments` | admin | `{ paymentMethod: cash|upi|card, transactionReference? }` |
-| `PATCH /api/payments/:id/confirm` · `PATCH /api/payments/:id/fail` | admin | Confirm (with UTR) or fail a pending UPI payment |
+| `PATCH /api/payments/:id/confirm` · `PATCH /api/payments/:id/fail` | admin | Only used with a payment gateway |
 | `POST /api/payments/:id/verify` | admin | Gateway signature verification (when a gateway is configured) |
 | `POST /api/orders/:id/close` | admin | Close a served, paid order |
 | `DELETE /api/orders/:id` · `POST /api/orders/bulk-delete` (`{ ids }`, max 200) | admin | Permanently delete closed or cancelled orders and their payments. Open orders are refused |
@@ -233,13 +233,13 @@ Connect to the API origin with `io(API_URL, { auth: { token } })`. Staff pass th
 
 ## Billing and payments
 
-- Prices are **exclusive of GST**. GST (default **5%**, configurable 0 to 28%) is split equally into CGST and SGST, and applies to subtotal plus service charge.
+- **No GST is charged.** Totals are the item prices plus an optional service charge. Old orders that had GST still display it.
 - **Service charge** is optional: set a rate in Settings and either enable it by default or apply it per bill.
 - The total can be rounded to the nearest rupee (shown as "Round off").
 - **Generate bill** assigns a sequential invoice number per Indian financial year (`INV/2026-27/00001`). Until it is paid, the bill can be regenerated with current settings. Item names and prices always come from the order snapshot.
 - **Print invoice** opens a narrow tax-invoice layout that suits A4 or 80 mm thermal printers.
 - **Payments:** Cash and Card are recorded as paid when staff confirm receipt (marked "Confirmed by staff").
-- **UPI is never marked successful automatically.** Without a gateway, a UPI payment stays **pending** until an admin checks their UPI or bank app and enters the UTR/transaction reference. It is then labelled "Confirmed by staff (not verified by a payment gateway)", or it can be marked "Not received".
+- **Payments:** cash and UPI only. Staff check the money arrived, press Mark paid, and then close the order. No UTR is needed. (If a payment gateway is configured, UPI waits for the gateway instead.)
 - **Payment gateway interface:** `server/services/paymentGateway.js` defines `createIntent()` and `verify()`. A Razorpay implementation is included (order creation and signature verification). To turn it on, set `PAYMENT_GATEWAY=razorpay`, `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`. It has **not** been tested against live Razorpay because no credentials were available. You would still need a checkout UI (Razorpay Checkout or a UPI intent QR) that calls `POST /api/payments/:id/verify`. Other providers (PhonePe, Paytm, Cashfree) can be added by implementing the same two functions.
 - **Close order** is allowed once the order is served and paid (or cancelled). Closing frees the table.
 
@@ -279,7 +279,7 @@ The frontend is a static Vite build (Vercel). The API needs a long-running Node 
 
 ### 4. First production run
 1. Create your real admin (below). Do **not** run the sample seed in production unless you want the sample menu; if you do, change both seeded passwords immediately (the app forces this).
-2. Log in, set restaurant details and GSTIN in **Settings**, build the real menu, create tables, and print the QR codes.
+2. Log in, set restaurant details in **Settings**, build the real menu, create tables, and print the QR codes.
 
 ## Admin account setup for production
 
@@ -303,7 +303,7 @@ NODE_ENV=production MONGODB_URI="..." SEED_ADMIN_PASSWORD="..." SEED_KITCHEN_PAS
 ```bash
 cd server && npm test        # uses MONGODB_URI_TEST or mongodb://127.0.0.1:27017/krishna_dine_test
 ```
-They cover login and forced password change, kitchen-vs-admin authorization, NoSQL injection payloads, the full order lifecycle with socket events, price tampering, idempotent double submission, order-ownership checks, invalid transitions, billing and GST math, UPI staying pending until confirmed, close-order rules, reports and CSV, disabled and regenerated QR codes, sold-out items, cancellation reasons, menu-price snapshots, and socket room isolation.
+They cover login and forced password change, kitchen-vs-admin authorization, NoSQL injection payloads, the full order lifecycle with socket events, price tampering, idempotent double submission, order-ownership checks, invalid transitions, billing math, cash and UPI recorded by staff (no card), close-order rules, reports and CSV, disabled and regenerated QR codes, sold-out items, cancellation reasons, menu-price snapshots, and socket room isolation.
 
 **Browser acceptance test** (the brief's 16-step workflow, using desktop, tablet and iPhone viewports):
 ```bash

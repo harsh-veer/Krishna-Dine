@@ -3,9 +3,10 @@ const { toPaise, toRupees, percentOf } = require('../utils/money');
 
 /**
  * Computes totals from line items. Prices are tax-exclusive.
- * GST applies to (subtotal + service charge) and is split equally into CGST and SGST.
+ * No GST is charged; the gst fields are kept at zero so older orders and reports stay readable.
  */
-function computeTotals(items, { gstRate = 0, serviceChargeRate = 0, roundTotal = true } = {}) {
+function computeTotals(items, { serviceChargeRate = 0, roundTotal = true } = {}) {
+  const gstRate = 0;
   const lines = items.map((i) => {
     const unit = toPaise(i.price);
     return { ...i, lineTotal: toRupees(unit * i.quantity), _line: unit * i.quantity };

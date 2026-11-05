@@ -245,7 +245,7 @@ function TableMenu({ table, tableToken }) {
               </span>
               <span className="text-left">
                 <span className="block text-xs text-cream-200/70">{t(cart.count === 1 ? 'menu.item' : 'menu.items', { n: cart.count })}</span>
-                <span className="block font-extrabold">{formatINR(cart.subtotal)} <span className="text-xs font-medium text-cream-200/60">+ GST</span></span>
+                <span className="block font-extrabold">{formatINR(cart.subtotal)}</span>
               </span>
             </span>
             <span className="flex items-center gap-1 font-bold">{t('menu.viewCart')} <ChevronRight className="h-5 w-5" /></span>

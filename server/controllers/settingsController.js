@@ -6,8 +6,6 @@ const pick = (s) => ({
   brandName: s.brandName,
   address: s.address,
   phone: s.phone,
-  gstin: s.gstin,
-  gstRate: s.gstRate,
   serviceChargeEnabled: s.serviceChargeEnabled,
   serviceChargeRate: s.serviceChargeRate,
   roundTotal: s.roundTotal,
@@ -19,7 +17,7 @@ exports.publicSettings = async (_req, res) => {
   const s = await Settings.get();
   res.json({
     success: true,
-    data: { restaurantName: s.restaurantName, brandName: s.brandName, address: s.address, phone: s.phone, gstRate: s.gstRate, serviceChargeRate: s.serviceChargeEnabled ? s.serviceChargeRate : 0 },
+    data: { restaurantName: s.restaurantName, brandName: s.brandName, address: s.address, phone: s.phone, serviceChargeRate: s.serviceChargeEnabled ? s.serviceChargeRate : 0 },
   });
 };
 

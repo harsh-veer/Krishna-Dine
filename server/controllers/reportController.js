@@ -14,8 +14,7 @@ function sendReport(res, report, format) {
         { metric: 'Completed (served)', value: s.completedOrders },
         { metric: 'Cancelled', value: s.cancelledOrders },
         { metric: 'Gross sales (INR)', value: s.revenue },
-        { metric: 'Subtotal before tax (INR)', value: s.subtotal },
-        { metric: 'GST (INR)', value: s.tax },
+        { metric: 'Subtotal (INR)', value: s.subtotal },
         { metric: 'Service charge (INR)', value: s.serviceCharge },
         { metric: 'Collected (INR)', value: s.collected },
         { metric: 'Outstanding (INR)', value: s.outstanding },
@@ -26,7 +25,7 @@ function sendReport(res, report, format) {
   if (report.daily) {
     sections.push({
       title: 'Sales by day',
-      columns: [{ key: 'date', label: 'Date' }, { key: 'orders', label: 'Orders' }, { key: 'cancelled', label: 'Cancelled' }, { key: 'tax', label: 'GST (INR)' }, { key: 'revenue', label: 'Sales (INR)' }],
+      columns: [{ key: 'date', label: 'Date' }, { key: 'orders', label: 'Orders' }, { key: 'cancelled', label: 'Cancelled' }, { key: 'revenue', label: 'Sales (INR)' }],
       rows: report.daily,
     });
   }

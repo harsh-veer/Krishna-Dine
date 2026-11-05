@@ -34,7 +34,9 @@ const STATUS_EVENT = Object.freeze({
 });
 
 const PAYMENT_STATUS = Object.freeze({ PENDING: 'pending', PAID: 'paid', FAILED: 'failed', REFUNDED: 'refunded' });
-const PAYMENT_METHODS = Object.freeze(['cash', 'upi', 'card']);
+const PAYMENT_METHODS = Object.freeze(['cash', 'upi']);
+// 'card' is no longer accepted but may exist on historical records.
+const STORED_PAYMENT_METHODS = Object.freeze([...PAYMENT_METHODS, 'card']);
 
 const TABLE_STATUS = Object.freeze(['available', 'occupied', 'reserved', 'cleaning']);
 
@@ -46,5 +48,6 @@ module.exports = {
   STATUS_EVENT,
   PAYMENT_STATUS,
   PAYMENT_METHODS,
+  STORED_PAYMENT_METHODS,
   TABLE_STATUS,
 };

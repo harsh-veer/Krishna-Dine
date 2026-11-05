@@ -7,7 +7,7 @@ import { LogoMark } from '../../components/Logo';
 import { Button, Spinner } from '../../components/ui';
 import { formatDateTime, formatINR2, PAYMENT_LABEL } from '../../utils/format';
 
-/** Printable tax invoice (A4 or 80mm thermal; the layout is narrow and centred). */
+/** Printable invoice (A4 or 80mm thermal; the layout is narrow and centred). */
 export default function InvoicePage() {
   const { id } = useParams();
   const [bill, setBill] = useState(null);
@@ -32,8 +32,7 @@ export default function InvoicePage() {
           <div className="mt-2 font-sans text-lg font-extrabold">{r.name}</div>
           <div className="text-xs">{r.address}</div>
           {r.phone && <div className="text-xs">Phone: {r.phone}</div>}
-          {r.gstin && <div className="text-xs">GSTIN: {r.gstin}</div>}
-          <div className="mt-3 border-y border-dashed border-black py-1 font-sans text-sm font-bold tracking-widest">TAX INVOICE</div>
+          <div className="mt-3 border-y border-dashed border-black py-1 font-sans text-sm font-bold tracking-widest">INVOICE</div>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-x-2 text-xs">
           <div>Invoice: {o.invoiceNumber || 'Not generated'}</div>
@@ -55,8 +54,7 @@ export default function InvoicePage() {
         <div className="mt-2 space-y-0.5 border-t border-dashed border-black pt-2 text-xs">
           <Line label="Subtotal" value={o.subtotal} />
           {o.serviceCharge > 0 && <Line label={`Service charge @${o.serviceChargeRate}%`} value={o.serviceCharge} />}
-          <Line label={`CGST @${o.gstRate / 2}%`} value={o.cgst} />
-          <Line label={`SGST @${o.gstRate / 2}%`} value={o.sgst} />
+          {o.tax > 0 && <Line label={`GST @${o.gstRate}%`} value={o.tax} />}
           {o.roundOff !== 0 && <Line label="Round off" value={o.roundOff} />}
         </div>
         <div className="mt-2 flex justify-between border-y border-dashed border-black py-1.5 font-sans text-base font-extrabold">

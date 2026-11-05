@@ -1,6 +1,6 @@
 'use strict';
 const mongoose = require('mongoose');
-const { ORDER_STATUS, PAYMENT_STATUS, PAYMENT_METHODS } = require('../config/constants');
+const { ORDER_STATUS, PAYMENT_STATUS, STORED_PAYMENT_METHODS } = require('../config/constants');
 
 // Snapshot of the menu item at the time of ordering, so bills never change when the menu does.
 const orderItemSchema = new mongoose.Schema(
@@ -52,7 +52,7 @@ const orderSchema = new mongoose.Schema(
     cancellationReason: { type: String, default: '' },
 
     paymentStatus: { type: String, enum: Object.values(PAYMENT_STATUS), default: PAYMENT_STATUS.PENDING },
-    paymentMethod: { type: String, enum: [...PAYMENT_METHODS, null], default: null },
+    paymentMethod: { type: String, enum: [...STORED_PAYMENT_METHODS, null], default: null },
     paidAt: Date,
 
     // Customer feedback, left once after the order is served.

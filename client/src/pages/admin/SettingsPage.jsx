@@ -14,8 +14,6 @@ const schema = z.object({
   brandName: z.string().trim().min(1).max(60),
   address: z.string().trim().max(250),
   phone: z.string().trim().max(30),
-  gstin: z.string().trim().toUpperCase().max(15).refine((v) => !v || /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(v), 'Enter a valid 15-character GSTIN'),
-  gstRate: z.coerce.number().min(0).max(28),
   serviceChargeEnabled: z.boolean(),
   serviceChargeRate: z.coerce.number().min(0).max(20),
   roundTotal: z.boolean(),
@@ -55,14 +53,12 @@ export default function SettingsPage() {
           <Field label="Address"><Textarea {...register('address')} /></Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Phone"><Input {...register('phone')} /></Field>
-            <Field label="GSTIN" error={e.gstin?.message}><Input {...register('gstin')} placeholder="09ABCDE1234F1Z5" /></Field>
           </div>
           <Field label="Invoice footer"><Input {...register('invoiceFooter')} /></Field>
         </div>
         <div className="space-y-6">
           <div className="card space-y-4 p-5">
             <h2 className="font-bold">Billing</h2>
-            <Field label="GST rate (%)" error={e.gstRate?.message} hint="Split equally into CGST and SGST. Restaurants (non-AC / no ITC) usually charge 5%."><Input type="number" step="0.01" {...register('gstRate')} /></Field>
             <div className="grid grid-cols-[1fr_auto] items-end gap-3">
               <Field label="Service charge (%)" error={e.serviceChargeRate?.message} hint="Optional. Shown on the bill only when enabled (or applied per bill)."><Input type="number" step="0.01" {...register('serviceChargeRate')} /></Field>
               <Controller name="serviceChargeEnabled" control={control} render={({ field }) => <label className="mb-7 flex items-center gap-2 text-sm font-semibold"><Toggle checked={field.value} onChange={field.onChange} label="Enable service charge" /> On by default</label>} />

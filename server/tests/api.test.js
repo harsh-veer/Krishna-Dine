@@ -194,27 +194,24 @@ test('full acceptance workflow over HTTP + Socket.IO', async () => {
   const served = await api('PATCH', `/orders/${order.id}/status`, { token: kitchenToken, body: { status: 'served' } });
   assert.equal(served.data.data.orderStatus, 'served');
 
-  // Billing: kitchen cannot bill; admin generates bill with GST.
+  // Billing: kitchen cannot bill; admin generates the bill (no GST).
   assert.equal((await api('POST', `/orders/${order.id}/bill`, { token: kitchenToken, body: {} })).status, 403);
   const bill = await api('POST', `/orders/${order.id}/bill`, { token: adminToken, body: {} });
   assert.equal(bill.status, 200, JSON.stringify(bill.data));
   const bo = bill.data.data.order;
   assert.match(bo.invoiceNumber, /^INV\/\d{4}-\d{2}\/\d{5}$/);
-  assert.equal(bo.gstRate, 5);
-  const half = Math.round(bo.subtotal * 2.5) / 100; // CGST and SGST are each rounded to paise
-  assert.equal(bo.cgst, half);
-  assert.equal(bo.tax, Math.round((half * 2) * 100) / 100);
-  assert.equal(bo.totalAmount, Math.round(bo.subtotal + bo.tax));
+  assert.equal(bo.tax, 0);
+  assert.equal(bo.cgst, 0);
+  assert.equal(bo.totalAmount, Math.round(bo.subtotal));
 
-  // UPI never auto-succeeds without a gateway.
+  // Card is not accepted.
+  assert.equal((await api('POST', `/orders/${order.id}/payments`, { token: adminToken, body: { paymentMethod: 'card' } })).status, 400);
+  // UPI is recorded by staff like cash: paid immediately, no UTR needed.
   const upi = await api('POST', `/orders/${order.id}/payments`, { token: adminToken, body: { paymentMethod: 'upi' } });
-  assert.equal(upi.status, 201);
-  assert.equal(upi.data.data.payment.paymentStatus, 'pending');
-  assert.equal(upi.data.data.bill.order.paymentStatus, 'pending');
-  const confirm = await api('PATCH', `/payments/${upi.data.data.payment.id}/confirm`, { token: adminToken, body: { transactionReference: 'UTR123456789' } });
-  assert.equal(confirm.status, 200, JSON.stringify(confirm.data));
-  assert.equal(confirm.data.data.payment.verification, 'staff');
-  assert.equal(confirm.data.data.bill.order.paymentStatus, 'paid');
+  assert.equal(upi.status, 201, JSON.stringify(upi.data));
+  assert.equal(upi.data.data.payment.paymentStatus, 'paid');
+  assert.equal(upi.data.data.payment.verification, 'staff');
+  assert.equal(upi.data.data.bill.order.paymentStatus, 'paid');
   assert.equal((await api('POST', `/orders/${order.id}/payments`, { token: adminToken, body: { paymentMethod: 'cash' } })).status, 409);
 
   const closed = await api('POST', `/orders/${order.id}/close`, { token: adminToken });

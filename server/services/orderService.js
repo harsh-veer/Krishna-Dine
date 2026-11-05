@@ -136,7 +136,6 @@ async function createOrder(input, { tableId, actor } = {}) {
 
   const settings = await Settings.get();
   const totals = computeTotals(lines, {
-    gstRate: settings.gstRate,
     serviceChargeRate: settings.serviceChargeEnabled ? settings.serviceChargeRate : 0,
     roundTotal: settings.roundTotal,
   });
@@ -262,7 +261,7 @@ async function editOrder(orderId, input, user) {
     const lines = [...kept, ...added];
     if (!lines.length) throw ApiError.badRequest('An order needs at least one item. Cancel the order instead.');
     const settings = await Settings.get();
-    const totals = computeTotals(lines, { gstRate: order.gstRate, serviceChargeRate: order.serviceChargeRate, roundTotal: settings.roundTotal });
+    const totals = computeTotals(lines, { serviceChargeRate: order.serviceChargeRate, roundTotal: settings.roundTotal });
     Object.assign(order, totals);
     if (order.invoiceNumber) order.billGeneratedAt = new Date();
   }

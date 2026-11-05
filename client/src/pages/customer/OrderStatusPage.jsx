@@ -157,7 +157,7 @@ export default function OrderStatusPage() {
           <div className="mt-4 space-y-1 border-t border-dashed border-cream-300 pt-3 text-sm text-brand-900/70">
             <div className="flex justify-between"><span>{t('order.subtotal')}</span><span>{formatINR(order.subtotal)}</span></div>
             {order.serviceCharge > 0 && <div className="flex justify-between"><span>{t('order.service')}</span><span>{formatINR(order.serviceCharge)}</span></div>}
-            <div className="flex justify-between"><span>{t('order.gst', { p: order.gstRate })}</span><span>{formatINR(order.tax)}</span></div>
+            {order.tax > 0 && <div className="flex justify-between"><span>{t('order.gst', { p: order.gstRate })}</span><span>{formatINR(order.tax)}</span></div>}
             {order.roundOff !== 0 && <div className="flex justify-between"><span>{t('order.round')}</span><span>{formatINR(order.roundOff)}</span></div>}
             <div className="flex justify-between pt-1 text-base font-extrabold text-brand-950"><span>{t('order.total')}</span><span>{formatINR(order.totalAmount)}</span></div>
             <div className="pt-1 text-xs">

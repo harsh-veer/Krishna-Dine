@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Ban, Banknote, CheckCircle2, ChefHat, ConciergeBell, CreditCard, HandPlatter, Lock, MessageSquareText, Pencil, Printer, ReceiptText, RefreshCw, Smartphone, ThumbsUp, Trash2, TriangleAlert } from 'lucide-react';
+import { ArrowLeft, Ban, Banknote, CheckCircle2, ChefHat, ConciergeBell, HandPlatter, Lock, MessageSquareText, Pencil, Printer, ReceiptText, RefreshCw, Smartphone, ThumbsUp, Trash2, TriangleAlert } from 'lucide-react';
 import { orderApi, paymentApi } from '../../services/endpoints';
 import { errorMessage, tokenStore } from '../../services/api';
 import { createSocket, ORDER_EVENTS } from '../../services/socket';
@@ -21,7 +21,6 @@ const NEXT = {
 const METHODS = [
   { value: 'cash', label: 'Cash', icon: Banknote },
   { value: 'upi', label: 'UPI', icon: Smartphone },
-  { value: 'card', label: 'Card', icon: CreditCard },
 ];
 
 export default function OrderDetailPage() {
@@ -34,7 +33,6 @@ export default function OrderDetailPage() {
   const navigate = useNavigate();
   const [method, setMethod] = useState('cash');
   const [reference, setReference] = useState('');
-  const [utr, setUtr] = useState('');
   const [serviceCharge, setServiceCharge] = useState(false);
 
   const load = useCallback(async () => {
@@ -79,7 +77,6 @@ export default function OrderDetailPage() {
   const next = NEXT[o.orderStatus];
   const cancelled = o.orderStatus === 'cancelled';
   const paid = o.paymentStatus === 'paid';
-  const pendingUpi = bill.payments.find((p) => p.paymentStatus === 'pending');
   const paidRecord = bill.payments.find((p) => p.paymentStatus === 'paid');
   const canBill = !cancelled;
 
@@ -177,8 +174,7 @@ export default function OrderDetailPage() {
             <dl className="space-y-1.5 text-sm">
               <Row label="Subtotal" value={formatINR2(o.subtotal)} />
               {o.serviceCharge > 0 && <Row label={`Service charge (${o.serviceChargeRate}%)`} value={formatINR2(o.serviceCharge)} />}
-              <Row label={`CGST (${o.gstRate / 2}%)`} value={formatINR2(o.cgst)} />
-              <Row label={`SGST (${o.gstRate / 2}%)`} value={formatINR2(o.sgst)} />
+              {o.tax > 0 && <Row label={`GST (${o.gstRate}%)`} value={formatINR2(o.tax)} />}
               {o.roundOff !== 0 && <Row label="Round off" value={formatINR2(o.roundOff)} />}
               <div className="flex items-center justify-between border-t border-dashed border-cream-300 pt-2 text-lg font-extrabold">
                 <span>Total</span><span className="tabular-nums" data-testid="bill-total">{formatINR2(o.totalAmount)}</span>
@@ -211,34 +207,14 @@ export default function OrderDetailPage() {
                   <div className="flex items-center gap-2 font-bold text-brand-800"><CheckCircle2 className="h-5 w-5" /> Paid by {PAYMENT_LABEL[o.paymentMethod]}</div>
                   {paidRecord && (
                     <div className="mt-2 space-y-0.5 text-brand-900/70">
-                      {paidRecord.transactionReference && <div>Reference: <span className="font-mono">{paidRecord.transactionReference}</span></div>}
                       <div>{paidRecord.verification === 'gateway' ? 'Verified by payment gateway' : 'Confirmed by staff (not verified by a payment gateway)'}{paidRecord.recordedByName ? ` · ${paidRecord.recordedByName}` : ''}</div>
                       <div>{formatDateTime(paidRecord.confirmedAt || paidRecord.createdAt)}</div>
                     </div>
                   )}
                 </div>
-              ) : pendingUpi ? (
-                <div className="space-y-3">
-                  <div className="flex gap-2.5 rounded-2xl bg-amber-50 p-3.5 text-sm text-amber-900" data-testid="upi-pending">
-                    <TriangleAlert className="h-5 w-5 shrink-0" />
-                    <div>
-                      <strong>UPI payment pending.</strong> {bill.gateway === 'none' ? 'No payment gateway is connected, so this is not verified automatically. Check that the money arrived in your UPI or bank app, then enter the UTR / transaction reference.' : 'Waiting for gateway verification.'}
-                      {bill.restaurant.upiId && <div className="mt-1">Pay to: <span className="font-mono font-semibold">{bill.restaurant.upiId}</span></div>}
-                    </div>
-                  </div>
-                  <Field label="UPI transaction reference (UTR)">
-                    <Input value={utr} onChange={(e) => setUtr(e.target.value)} placeholder="e.g. 431245678901" data-testid="utr-input" />
-                  </Field>
-                  <div className="flex gap-2">
-                    <Button className="flex-1" icon={CheckCircle2} disabled={utr.trim().length < 4} loading={busy === 'confirm'} onClick={() => run('confirm', () => paymentApi.confirm(pendingUpi.id, { transactionReference: utr.trim() }), 'UPI payment confirmed')} data-testid="confirm-upi">
-                      I received it
-                    </Button>
-                    <Button variant="secondary" loading={busy === 'fail'} onClick={() => run('fail', () => paymentApi.fail(pendingUpi.id), 'Payment marked as failed')}>Not received</Button>
-                  </div>
-                </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {METHODS.map((m) => (
                       <button
                         key={m.value}
@@ -251,18 +227,11 @@ export default function OrderDetailPage() {
                       </button>
                     ))}
                   </div>
-                  {method === 'card' && (
-                    <Field label="Card slip / terminal reference (optional)">
-                      <Input value={reference} onChange={(e) => setReference(e.target.value)} />
-                    </Field>
-                  )}
                   <p className="text-xs text-brand-900/55">
-                    {method === 'upi'
-                      ? 'Creates a pending UPI payment. It is only marked paid after you confirm the money arrived (or a gateway verifies it).'
-                      : `Records ${formatINR2(o.totalAmount)} received by ${PAYMENT_LABEL[method].toLowerCase()} and marks the bill paid.`}
+                    {`Records ${formatINR2(o.totalAmount)} received by ${PAYMENT_LABEL[method].toLowerCase()} and marks the bill paid. Then close the order.`}
                   </p>
-                  <Button className="w-full" size="lg" loading={busy === 'pay'} onClick={() => run('pay', () => orderApi.pay(o.id, { paymentMethod: method, transactionReference: reference.trim() }), method === 'upi' ? 'UPI payment awaiting confirmation' : 'Payment recorded')} data-testid="record-payment">
-                    {method === 'upi' ? 'Start UPI payment' : `Mark paid · ${formatINR2(o.totalAmount)}`}
+                  <Button className="w-full" size="lg" loading={busy === 'pay'} onClick={() => run('pay', () => orderApi.pay(o.id, { paymentMethod: method, transactionReference: reference.trim() }), 'Payment recorded')} data-testid="record-payment">
+                    {`Mark paid · ${formatINR2(o.totalAmount)}`}
                   </Button>
                 </div>
               )}

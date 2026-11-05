@@ -10,7 +10,7 @@ const settingsSchema = new mongoose.Schema(
     address: { type: String, default: 'Akbarpur, Ambedkar Nagar, Uttar Pradesh, India' },
     phone: { type: String, default: '' },
     gstin: { type: String, default: '' },
-    gstRate: { type: Number, min: 0, max: 28, default: 5 },
+    gstRate: { type: Number, min: 0, max: 28, default: 0 },
     serviceChargeEnabled: { type: Boolean, default: false },
     serviceChargeRate: { type: Number, min: 0, max: 20, default: 0 },
     roundTotal: { type: Boolean, default: true },

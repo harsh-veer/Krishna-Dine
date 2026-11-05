@@ -1,12 +1,12 @@
 'use strict';
 const mongoose = require('mongoose');
-const { PAYMENT_STATUS, PAYMENT_METHODS } = require('../config/constants');
+const { PAYMENT_STATUS, STORED_PAYMENT_METHODS } = require('../config/constants');
 
 const paymentSchema = new mongoose.Schema(
   {
     order: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
     amount: { type: Number, required: true, min: 0 },
-    paymentMethod: { type: String, enum: PAYMENT_METHODS, required: true },
+    paymentMethod: { type: String, enum: STORED_PAYMENT_METHODS, required: true },
     transactionReference: { type: String, trim: true, maxlength: 100, default: '' },
     paymentStatus: { type: String, enum: Object.values(PAYMENT_STATUS), default: PAYMENT_STATUS.PENDING },
     // How the payment was confirmed. "gateway" means verified by a payment provider API;

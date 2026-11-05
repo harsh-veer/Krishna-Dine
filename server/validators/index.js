@@ -204,10 +204,6 @@ const settings = {
     brandName: trimmed(60).min(1).optional(),
     address: trimmed(250).optional(),
     phone: trimmed(30).optional(),
-    gstin: trimmed(15)
-      .optional()
-      .refine((v) => !v || /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(v), 'Enter a valid 15-character GSTIN'),
-    gstRate: z.coerce.number().min(0).max(28).optional(),
     serviceChargeEnabled: z.boolean().optional(),
     serviceChargeRate: z.coerce.number().min(0).max(20).optional(),
     roundTotal: z.boolean().optional(),

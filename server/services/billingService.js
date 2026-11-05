@@ -47,7 +47,6 @@ async function buildBill(order) {
       brandName: settings.brandName,
       address: settings.address,
       phone: settings.phone,
-      gstin: settings.gstin,
       invoiceFooter: settings.invoiceFooter,
       upiId: settings.upiId,
     },
@@ -61,7 +60,7 @@ async function buildBill(order) {
  * Generates (or regenerates, while unpaid) the itemised bill using the current billing settings.
  * Item prices come from the order snapshot, never from the live menu.
  */
-async function generateBill(orderId, { applyServiceCharge, gstRate } = {}) {
+async function generateBill(orderId, { applyServiceCharge } = {}) {
   const order = await Order.findById(orderId);
   if (!order) throw ApiError.notFound('Order not found');
   if (order.orderStatus === 'cancelled') throw ApiError.conflict('Cancelled orders cannot be billed');
@@ -72,7 +71,6 @@ async function generateBill(orderId, { applyServiceCharge, gstRate } = {}) {
     const totals = computeTotals(
       order.items.map((i) => ({ menuItem: i.menuItem, name: i.name, price: i.price, quantity: i.quantity, isVegetarian: i.isVegetarian, notes: i.notes })),
       {
-        gstRate: gstRate ?? settings.gstRate,
         serviceChargeRate: useService ? settings.serviceChargeRate : 0,
         roundTotal: settings.roundTotal,
       }
@@ -105,8 +103,8 @@ async function markOrderPaid(order, method) {
 
 /**
  * Records a payment against an order.
- *  - cash / card: staff confirm money received -> paid (verification "staff").
- *  - upi: stays pending until a gateway verifies it or staff explicitly confirm it.
+ *  - cash / upi: staff confirm money received -> paid (verification "staff"), then the order can be closed.
+ *  - upi with a configured payment gateway: stays pending until the gateway verifies it.
  */
 async function recordPayment(orderId, { paymentMethod, transactionReference = '', note = '' }, user) {
   let order = await Order.findById(orderId);
@@ -133,12 +131,12 @@ async function recordPayment(orderId, { paymentMethod, transactionReference = ''
   });
 
   let intent = null;
-  if (paymentMethod === 'upi') {
-    const gateway = getGateway();
+  const gateway = getGateway();
+  if (paymentMethod === 'upi' && gateway.configured) {
     payment.paymentStatus = 'pending';
     payment.verification = 'none';
     payment.gateway = gateway.name;
-    if (gateway.configured) intent = await gateway.createIntent({ amount: order.totalAmount, receipt: order.orderNumber });
+    intent = await gateway.createIntent({ amount: order.totalAmount, receipt: order.orderNumber });
     if (intent) payment.gatewayPayload = { gatewayOrderId: intent.gatewayOrderId };
     await payment.save();
     order.paymentMethod = 'upi';

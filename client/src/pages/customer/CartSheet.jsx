@@ -48,8 +48,7 @@ export default function CartSheet({ open, onClose, table, tableToken, settings, 
 
   const estimate = useMemo(() => {
     const service = Math.round(cart.subtotal * (settings?.serviceChargeRate || 0)) / 100;
-    const gst = Math.round((cart.subtotal + service) * (settings?.gstRate || 0)) / 100;
-    return { service, gst, total: Math.round(cart.subtotal + service + gst) };
+    return { service, total: Math.round(cart.subtotal + service) };
   }, [cart.subtotal, settings]);
 
   const hasUnavailable = cart.lines.some((l) => l.unavailable);
@@ -158,7 +157,6 @@ export default function CartSheet({ open, onClose, table, tableToken, settings, 
               <div className="card space-y-1.5 p-4 text-sm">
                 <Row label={t('cart.itemTotal')} value={formatINR(cart.subtotal)} />
                 {estimate.service > 0 && <Row label={t('cart.service', { p: settings.serviceChargeRate })} value={formatINR(estimate.service)} />}
-                <Row label={t('cart.gst', { p: settings?.gstRate ?? 0 })} value={formatINR(estimate.gst)} />
                 <div className="my-2 border-t border-dashed border-cream-300" />
                 <Row label={<span className="font-bold text-brand-950">{t('cart.estTotal')}</span>} value={<span className="text-base font-extrabold text-brand-950">{formatINR(estimate.total)}</span>} />
                 <p className="pt-1 text-xs text-brand-900/50">{t('cart.finalNote')}</p>

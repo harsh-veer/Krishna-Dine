@@ -19,12 +19,10 @@ function unitPrice(item, size, addons) {
   return Math.round(unit * 100) / 100;
 }
 
-function estimate(lines, gstRate, serviceRate) {
+function estimate(lines, serviceRate) {
   const subtotal = lines.reduce((s, l) => s + Math.round(l.price * 100) * l.quantity, 0);
   const service = Math.round((subtotal * serviceRate) / 100);
-  const taxable = subtotal + service;
-  const tax = 2 * Math.round((taxable * gstRate) / 200);
-  return { subtotal: subtotal / 100, service: service / 100, tax: tax / 100, total: Math.round((taxable + tax) / 100) };
+  return { subtotal: subtotal / 100, service: service / 100, total: Math.round((subtotal + service) / 100) };
 }
 
 /** Admin: place an order for a table (mode "new") or change an open order (mode "edit"). */
@@ -75,8 +73,8 @@ export default function OrderEditorPage({ mode }) {
     return menu.items.filter((i) => (!cat || i.category === cat) && (!q || i.name.toLowerCase().includes(q) || (i.nameHi || '').includes(q)));
   }, [menu, query, cat]);
 
-  const rates = editing && order ? { gst: order.gstRate, service: order.serviceChargeRate } : { gst: settings?.gstRate ?? 0, service: settings?.serviceChargeEnabled ? settings.serviceChargeRate : 0 };
-  const totals = estimate(lines, rates.gst, rates.service);
+  const rates = editing && order ? { service: order.serviceChargeRate } : { service: settings?.serviceChargeEnabled ? settings.serviceChargeRate : 0 };
+  const totals = estimate(lines, rates.service);
 
   const addLine = (item, size = '', addons = [], notes = '') => {
     const key = lineKey(item.id, size, addons);
@@ -212,7 +210,6 @@ export default function OrderEditorPage({ mode }) {
             <div className="mt-3 space-y-1 border-t border-dashed border-cream-300 pt-3 text-sm text-brand-900/75">
               <div className="flex justify-between"><span>Subtotal</span><span className="tabular-nums">{formatINR(totals.subtotal)}</span></div>
               {rates.service > 0 && <div className="flex justify-between"><span>Service charge ({rates.service}%)</span><span className="tabular-nums">{formatINR(totals.service)}</span></div>}
-              <div className="flex justify-between"><span>GST ({rates.gst}%)</span><span className="tabular-nums">{formatINR(totals.tax)}</span></div>
               <div className="flex justify-between pt-1 text-base font-extrabold text-brand-950"><span>Estimated total</span><span className="tabular-nums" data-testid="editor-total">{formatINR(totals.total)}</span></div>
             </div>
             <Button className="mt-4 w-full" size="lg" loading={saving} disabled={!lines.length} onClick={save} data-testid="editor-save">{editing ? 'Save changes' : 'Place order'}</Button>
