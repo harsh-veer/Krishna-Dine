@@ -77,6 +77,7 @@ export default function OrderDetailPage() {
   const next = NEXT[o.orderStatus];
   const cancelled = o.orderStatus === 'cancelled';
   const paid = o.paymentStatus === 'paid';
+  const pendingUpi = bill.payments.find((p) => p.paymentStatus === 'pending');
   const paidRecord = bill.payments.find((p) => p.paymentStatus === 'paid');
   const canBill = !cancelled;
 
@@ -211,6 +212,11 @@ export default function OrderDetailPage() {
                       <div>{formatDateTime(paidRecord.confirmedAt || paidRecord.createdAt)}</div>
                     </div>
                   )}
+                </div>
+              ) : pendingUpi ? (
+                <div className="space-y-3" data-testid="upi-pending">
+                  <p className="text-sm text-brand-900/70">A UPI payment of {formatINR2(o.totalAmount)} is waiting. Once the money has arrived, mark it received.</p>
+                  <Button className="w-full" size="lg" icon={CheckCircle2} loading={busy === 'confirm'} onClick={() => run('confirm', () => paymentApi.confirm(pendingUpi.id, { transactionReference: 'UPI-STAFF' }), 'Payment recorded')} data-testid="confirm-upi">Mark received</Button>
                 </div>
               ) : (
                 <div className="space-y-3">

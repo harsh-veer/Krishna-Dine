@@ -176,7 +176,7 @@ const orders = {
 };
 
 const payments = {
-  confirm: z.object({ transactionReference: trimmed(100).min(4, 'Enter the UPI transaction / UTR reference'), note: trimmed(200).optional() }),
+  confirm: z.object({ transactionReference: trimmed(100).optional().default(''), note: trimmed(200).optional() }),
   fail: z.object({ note: trimmed(200).optional() }),
   verify: z.object({ paymentId: trimmed(100).min(1), signature: trimmed(200).min(1) }),
 };
