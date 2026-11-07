@@ -7,6 +7,7 @@ import CancelOrderDialog from '../../components/CancelOrderDialog';
 import MenuAvailabilityDrawer from './MenuAvailabilityDrawer';
 import { useStaffOrders } from '../../hooks/useStaffOrders';
 import { useChime } from '../../hooks/useChime';
+import { usePushAlerts } from '../../hooks/usePushAlerts';
 import { useNow } from '../../hooks/useNow';
 import { orderApi } from '../../services/endpoints';
 import { errorMessage } from '../../services/api';
@@ -23,6 +24,7 @@ const NEW_HIGHLIGHT_MS = 2 * 60 * 1000;
 
 export default function KitchenPage() {
   const chime = useChime();
+  const pushAlerts = usePushAlerts();
   const now = useNow(1000);
   const [tab, setTab] = useState('new');
   const [busy, setBusy] = useState({});
@@ -137,6 +139,13 @@ export default function KitchenPage() {
       }
     >
       <div className="px-4 py-5 lg:px-6">
+        {pushAlerts.state === 'off' && (
+          <button type="button" onClick={pushAlerts.enable} disabled={pushAlerts.busy} className="mb-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-800 px-4 py-3 text-base font-extrabold text-cream-50 shadow-lift" data-testid="push-banner">
+            <BellRing className="h-5 w-5" /> Turn on alerts when the screen is off or another app is open
+          </button>
+        )}
+        {pushAlerts.state === 'denied' && <p className="mb-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900">Notifications are blocked for this site. Allow them in the browser settings to get alerts with the screen off.</p>}
+        {pushAlerts.state === 'on' && <p className="mb-3 text-right text-xs text-cream-200/70">Background alerts are on · <button type="button" className="underline" onClick={() => pushAlerts.test()}>send a test</button></p>}
         {soundBlocked && (
           <button type="button" onClick={chime.enabled ? chime.unlock : chime.toggle} className="mb-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-gold-400 px-4 py-3 text-base font-extrabold text-brand-950 shadow-lift" data-testid="sound-banner">
             <VolumeX className="h-5 w-5" /> {chime.enabled ? 'Tap here to turn on the new-order sound alert' : 'Sound is off. Tap to turn it on'}

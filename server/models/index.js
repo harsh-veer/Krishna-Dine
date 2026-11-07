@@ -9,4 +9,5 @@ module.exports = {
   Settings: require('./Settings'),
   Counter: require('./Counter'),
   Upload: require('./Upload'),
+  PushSubscription: require('./PushSubscription'),
 };

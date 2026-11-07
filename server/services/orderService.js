@@ -170,6 +170,7 @@ async function createOrder(input, { tableId, actor } = {}) {
 
   // Persisted first, then broadcast.
   emitOrderEvent(STATUS_EVENT.pending, order);
+  require('./pushService').notifyNewOrder(order);
   refreshTableStatus(table._id).catch(() => {});
   return { order, trackingToken: trackingTokenFor(order._id.toString()), replayed: false };
 }

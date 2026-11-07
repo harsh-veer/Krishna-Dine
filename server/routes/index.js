@@ -17,6 +17,7 @@ const users = require('../controllers/userController');
 const settings = require('../controllers/settingsController');
 const pub = require('../controllers/publicController');
 const uploads = require('../controllers/uploadController');
+const push = require('../controllers/pushController');
 
 const ADMIN = authorize('admin');
 const STAFF = authorize('admin', 'kitchen');
@@ -52,6 +53,10 @@ router.use('/tables', tableRouter);
 
 // ---- Menu & categories (read is public; writes are admin; kitchen may toggle availability)
 router.get('/menu', publicLimiter, optionalAuth, validate({ query: v.menu.listQuery }), a(menu.listMenu));
+router.get('/push/key', authenticate, STAFF, a(push.key));
+router.post('/push/subscribe', authenticate, STAFF, a(push.subscribe));
+router.post('/push/unsubscribe', authenticate, STAFF, a(push.unsubscribe));
+router.post('/push/test', authenticate, STAFF, a(push.test));
 router.post('/menu', authenticate, ADMIN, validate({ body: v.menu.create }), a(menu.createItem));
 router.put('/menu/:id', authenticate, ADMIN, validate({ params: v.idParams, body: v.menu.update }), a(menu.updateItem));
 router.patch('/menu/:id/availability', authenticate, STAFF, validate({ params: v.idParams, body: v.menu.availability }), a(menu.setAvailability));

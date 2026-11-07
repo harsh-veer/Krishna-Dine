@@ -16,6 +16,8 @@ const settingsSchema = new mongoose.Schema(
     roundTotal: { type: Boolean, default: true },
     invoiceFooter: { type: String, default: 'Thank you for dining with us!' },
     upiId: { type: String, default: '' },
+    vapidPublicKey: { type: String, default: '' },
+    vapidPrivateKey: { type: String, default: '', select: false },
   },
   { timestamps: true }
 );

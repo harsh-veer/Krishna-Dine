@@ -84,3 +84,10 @@ export const settingsApi = {
   get: () => unwrap(api.get('/settings')),
   update: (body) => unwrap(api.put('/settings', body)),
 };
+
+export const pushApi = {
+  key: () => unwrap(api.get('/push/key')),
+  subscribe: (sub) => unwrap(api.post('/push/subscribe', sub)),
+  unsubscribe: (endpoint) => unwrap(api.post('/push/unsubscribe', { endpoint })),
+  test: () => unwrap(api.post('/push/test')),
+};

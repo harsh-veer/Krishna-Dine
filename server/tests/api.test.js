@@ -427,3 +427,20 @@ test('admin can place and edit orders; kitchen cannot; paid orders are locked', 
   await api('POST', `/orders/${id}/payments`, { token: adminToken, body: { paymentMethod: 'cash' } });
   assert.equal((await api('PATCH', `/orders/${id}`, { token: adminToken, body: { items: [{ lineIndex: 0, quantity: 5 }] } })).status, 409);
 });
+
+test('push alerts: staff can fetch the key and register a device; customers cannot', async () => {
+  assert.equal((await api('GET', '/push/key')).status, 401);
+  const key = await api('GET', '/push/key', { token: kitchenToken });
+  assert.equal(key.status, 200);
+  assert.ok(key.data.data.publicKey.length > 40);
+  const bad = await api('POST', '/push/subscribe', { token: kitchenToken, body: { endpoint: 'x' } });
+  assert.equal(bad.status, 400);
+  const sub = { endpoint: 'https://127.0.0.1:9/push/abc', keys: { p256dh: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM', auth: 'tBHItJI5svbpez7KI4CCXg' } };
+  assert.equal((await api('POST', '/push/subscribe', { token: kitchenToken, body: sub })).status, 201);
+  // Placing an order must still work (push delivery failures are swallowed).
+  const t = (await api('GET', '/tables', { token: adminToken })).data.data.find((x) => x.tableNumber === '03');
+  const item = (await api('GET', '/menu')).data.data.items[8];
+  const placed = await api('POST', '/orders', { body: { qrToken: t.uniqueQrToken, customerName: 'Push', items: [{ menuItemId: item.id, quantity: 1 }] } });
+  assert.equal(placed.status, 201);
+  assert.equal((await api('POST', '/push/unsubscribe', { token: kitchenToken, body: { endpoint: sub.endpoint } })).status, 200);
+});
