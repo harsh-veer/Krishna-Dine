@@ -20,6 +20,9 @@ self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch { d = { title: 'New order', body: e.data && e.data.text() }; }
   e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => list.forEach((c) => c.postMessage({ type: 'new-order' })))
+  );
+  e.waitUntil(
     self.registration.showNotification(d.title || 'New order', {
       body: d.body || '',
       icon: '/icon-192.png',
@@ -27,7 +30,7 @@ self.addEventListener('push', (e) => {
       tag: d.tag || 'order',
       renotify: true,
       requireInteraction: true,
-      vibrate: [400, 150, 400, 150, 400],
+      vibrate: [500, 200, 500, 200, 500, 200, 500],
       data: { url: d.url || '/kitchen' },
     })
   );

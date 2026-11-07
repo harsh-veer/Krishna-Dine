@@ -43,27 +43,40 @@ export function useChime() {
     };
   }, [unlock]);
 
+  const playRef = useRef(null);
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return undefined;
+    const onMsg = (e) => { if (e.data && e.data.type === 'new-order') playRef.current?.(); };
+    navigator.serviceWorker.addEventListener('message', onMsg);
+    return () => navigator.serviceWorker.removeEventListener('message', onMsg);
+  }, []);
+
   const play = useCallback(() => {
     if (!enabled) return;
     const ctx = ensureCtx();
     if (!ctx || ctx.state !== 'running') return;
-    // A loud two-round doorbell pattern so it carries across a busy kitchen.
-    const notes = [880, 1174.66, 1567.98, 880, 1174.66, 1567.98];
-    try { navigator.vibrate?.([300, 150, 300]); } catch { /* not supported */ }
-    notes.forEach((freq, i) => {
+    // Siren-style alarm: alternating high/low tones for about 3 seconds, clearly different from a normal notification.
+    try { navigator.vibrate?.([500, 200, 500, 200, 500]); } catch { /* not supported */ }
+    const master = ctx.createGain();
+    master.gain.value = 0.7;
+    master.connect(ctx.destination);
+    for (let i = 0; i < 8; i += 1) {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.value = freq;
-      const t = ctx.currentTime + i * 0.2 + (i >= 3 ? 0.25 : 0);
+      osc.type = 'square';
+      osc.frequency.value = i % 2 === 0 ? 960 : 720;
+      const t = ctx.currentTime + i * 0.38;
       gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(0.9, t + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
-      osc.connect(gain).connect(ctx.destination);
+      gain.gain.exponentialRampToValueAtTime(0.6, t + 0.02);
+      gain.gain.setValueAtTime(0.6, t + 0.32);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.37);
+      osc.connect(gain).connect(master);
       osc.start(t);
-      osc.stop(t + 0.6);
-    });
+      osc.stop(t + 0.4);
+    }
   }, [enabled, ensureCtx]);
+
+  playRef.current = play;
 
   // First tap only unlocks audio; later taps switch sound on and off.
   const toggle = useCallback(() => {
