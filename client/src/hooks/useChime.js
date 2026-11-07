@@ -47,19 +47,21 @@ export function useChime() {
     if (!enabled) return;
     const ctx = ensureCtx();
     if (!ctx || ctx.state !== 'running') return;
-    const notes = [880, 1174.66, 1567.98];
+    // A loud two-round doorbell pattern so it carries across a busy kitchen.
+    const notes = [880, 1174.66, 1567.98, 880, 1174.66, 1567.98];
+    try { navigator.vibrate?.([300, 150, 300]); } catch { /* not supported */ }
     notes.forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'sine';
+      osc.type = 'triangle';
       osc.frequency.value = freq;
-      const t = ctx.currentTime + i * 0.16;
+      const t = ctx.currentTime + i * 0.2 + (i >= 3 ? 0.25 : 0);
       gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(0.35, t + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+      gain.gain.exponentialRampToValueAtTime(0.9, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
       osc.connect(gain).connect(ctx.destination);
       osc.start(t);
-      osc.stop(t + 0.5);
+      osc.stop(t + 0.6);
     });
   }, [enabled, ensureCtx]);
 

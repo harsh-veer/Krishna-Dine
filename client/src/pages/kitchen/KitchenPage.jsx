@@ -103,6 +103,15 @@ export default function KitchenPage() {
     [upsert]
   );
 
+  // Keep ringing every 8 seconds until every new order has been accepted (or cancelled).
+  const { play: playChime } = chime;
+  useEffect(() => {
+    if (!pendingCount) return undefined;
+    const id = setInterval(playChime, 8000);
+    return () => clearInterval(id);
+  }, [pendingCount, playChime]);
+
+  const soundBlocked = !chime.enabled || !chime.unlocked;
   const tabs = TABS.map((t) => ({ ...t, count: grouped[t.value].length }));
   const list = grouped[tab];
 
@@ -128,6 +137,11 @@ export default function KitchenPage() {
       }
     >
       <div className="px-4 py-5 lg:px-6">
+        {soundBlocked && (
+          <button type="button" onClick={chime.enabled ? chime.unlock : chime.toggle} className="mb-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-gold-400 px-4 py-3 text-base font-extrabold text-brand-950 shadow-lift" data-testid="sound-banner">
+            <VolumeX className="h-5 w-5" /> {chime.enabled ? 'Tap here to turn on the new-order sound alert' : 'Sound is off. Tap to turn it on'}
+          </button>
+        )}
         <Tabs tabs={tabs} value={tab} onChange={setTab} size="lg" className="mb-5 w-fit max-w-full" />
         {loading ? (
           <Spinner label="Loading orders" />
