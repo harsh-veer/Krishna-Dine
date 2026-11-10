@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { FullPageSpinner } from './components/ui';
 import MenuPage from './pages/customer/MenuPage';
+import TablePickerPage from './pages/customer/TablePickerPage';
 import OrderStatusPage from './pages/customer/OrderStatusPage';
 import LandingPage from './pages/customer/LandingPage';
 
@@ -32,6 +33,7 @@ export default function App() {
         <Suspense fallback={<FullPageSpinner />}>
           <Routes>
             <Route path="/" element={<LandingPage />} />
+            <Route path="/menu" element={<TablePickerPage />} />
             <Route path="/menu/:token" element={<MenuPage />} />
             <Route path="/order/:orderId" element={<OrderStatusPage />} />
             <Route path="/login" element={<LoginPage />} />

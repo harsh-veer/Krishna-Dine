@@ -5,6 +5,7 @@ const { newQrToken, buildMenuUrl, qrPng, qrDataUrl, serializeTable } = require('
 const { emitTableEvent } = require('../sockets/emitter');
 const { createZip } = require('../utils/zip');
 const { objectId } = require('../validators');
+const { env } = require('../config/env');
 
 const safeName = (n) => String(n).replace(/[^A-Za-z0-9_-]+/g, '-');
 
@@ -82,6 +83,12 @@ exports.regenerateQr = async (req, res) => {
   await table.save();
   emitTableEvent('table-updated', serializeTable(table));
   res.json({ success: true, data: { ...serializeTable(table), qrDataUrl: await qrDataUrl(table.qrCodeUrl) } });
+};
+
+/** One shared QR code for every table: customers scan it, then pick their table from a list. */
+exports.sharedQr = async (_req, res) => {
+  const url = `${env.publicMenuUrl}/menu`;
+  res.json({ success: true, data: { id: 'shared', tableNumber: 'ANY', posterLabel: 'CHOOSE YOUR TABLE', qrCodeUrl: url, isActive: true, qrDataUrl: await qrDataUrl(url) } });
 };
 
 /** JSON list of QR data URLs (for bulk printing) or a ZIP of PNGs (?format=zip). */

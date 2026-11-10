@@ -257,7 +257,7 @@ export async function buildQrCard(table) {
 
   text(ctx, 'SCAN TO ORDER', 450, 950, { font: `500 32px ${SANS}`, color: C.oliveDark, spacing: 10 });
   text(ctx, 'OUR MENU', 450, 1020, { font: `700 78px ${SERIF}`, color: C.olive, spacing: 6 });
-  text(ctx, `TABLE ${table.tableNumber}`, 450, 1064, { font: `600 28px ${SANS}`, color: C.gold, spacing: 8 });
+  text(ctx, table.posterLabel || `TABLE ${table.tableNumber}`, 450, 1064, { font: `600 28px ${SANS}`, color: C.gold, spacing: 8 });
 
   const q = POSTER.qr;
   ctx.fillStyle = '#FFFFFF';
@@ -305,7 +305,7 @@ export async function downloadQrCard(table) {
   const url = await buildQrCard(table);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `krishna-dine-table-${String(table.tableNumber).replace(/[^A-Za-z0-9_-]+/g, '-')}.png`;
+  a.download = `krishna-dine-${table.id === 'shared' ? 'shared-qr' : 'table-' + String(table.tableNumber).replace(/[^A-Za-z0-9_-]+/g, '-')}.png`;
   document.body.appendChild(a);
   a.click();
   a.remove();

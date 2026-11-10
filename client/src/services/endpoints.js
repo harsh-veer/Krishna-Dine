@@ -9,6 +9,8 @@ export const authApi = {
 
 export const publicApi = {
   table: (token) => unwrap(api.get(`/public/tables/${encodeURIComponent(token)}`, { skipAuth: true })),
+  tables: () => unwrap(api.get('/public/tables', { skipAuth: true })),
+  selectTable: (tableId) => unwrap(api.post('/public/select-table', { tableId }, { skipAuth: true })),
   settings: () => unwrap(api.get('/public/settings', { skipAuth: true })),
   menu: () => unwrap(api.get('/menu', { skipAuth: true })),
   placeOrder: (body) => unwrap(api.post('/orders', body, { skipAuth: true })),
@@ -39,6 +41,7 @@ export const tableApi = {
   update: (id, body) => unwrap(api.put(`/tables/${id}`, body)),
   remove: (id) => unwrap(api.delete(`/tables/${id}`)),
   qr: (id) => unwrap(api.get(`/tables/${id}/qr`)),
+  sharedQr: () => unwrap(api.get('/tables/qr/shared')),
   regenerate: (id) => unwrap(api.post(`/tables/${id}/regenerate-qr`)),
   bulkQr: (ids) => unwrap(api.get('/tables/qr/bulk', { params: ids?.length ? { ids: ids.join(',') } : {} })),
 };

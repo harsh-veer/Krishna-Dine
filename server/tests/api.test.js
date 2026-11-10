@@ -444,3 +444,22 @@ test('push alerts: staff can fetch the key and register a device; customers cann
   assert.equal(placed.status, 201);
   assert.equal((await api('POST', '/push/unsubscribe', { token: kitchenToken, body: { endpoint: sub.endpoint } })).status, 200);
 });
+
+test('shared QR: customers list active tables, pick one and get its ordering token', async () => {
+  const list = await api('GET', '/public/tables');
+  assert.equal(list.status, 200);
+  assert.ok(list.data.data.length >= 1);
+  assert.ok(list.data.data.every((t) => t.id && t.tableNumber && !('uniqueQrToken' in t)));
+  const pick = list.data.data[0];
+  const sel = await api('POST', '/public/select-table', { body: { tableId: pick.id } });
+  assert.equal(sel.status, 200);
+  const resolved = await api('GET', `/public/tables/${sel.data.data.token}`);
+  assert.equal(resolved.data.data.id, pick.id);
+  assert.equal((await api('POST', '/public/select-table', { body: { tableId: 'nope' } })).status, 400);
+  assert.equal((await api('POST', '/public/select-table', { body: { tableId: '0'.repeat(24) } })).status, 404);
+  assert.equal((await api('GET', '/tables/qr/shared')).status, 401);
+  const shared = await api('GET', '/tables/qr/shared', { token: adminToken });
+  assert.equal(shared.status, 200);
+  assert.match(shared.data.data.qrCodeUrl, /\/menu$/);
+  assert.match(shared.data.data.qrDataUrl, /^data:image\/png/);
+});

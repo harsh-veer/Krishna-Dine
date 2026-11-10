@@ -35,6 +35,8 @@ authRouter.post('/change-password', authenticate, validate({ body: v.auth.change
 router.use('/auth', authRouter);
 
 // ---- Public (customer) endpoints
+router.get('/public/tables', publicLimiter, a(pub.listTables));
+router.post('/public/select-table', publicLimiter, a(pub.selectTable));
 router.get('/public/tables/:token', publicLimiter, a(pub.resolveTable));
 router.get('/public/settings', publicLimiter, a(settings.publicSettings));
 
@@ -43,6 +45,7 @@ const tableRouter = express.Router();
 tableRouter.use(authenticate);
 tableRouter.get('/', STAFF, a(tables.list));
 tableRouter.post('/', ADMIN, validate({ body: v.tables.create }), a(tables.create));
+tableRouter.get('/qr/shared', ADMIN, a(tables.sharedQr));
 tableRouter.get('/qr/bulk', ADMIN, validate({ query: v.tables.bulkQuery }), a(tables.bulkQr));
 tableRouter.get('/qr/bulk.zip', ADMIN, validate({ query: v.tables.bulkQuery }), a(tables.bulkQr));
 tableRouter.put('/:id', ADMIN, validate({ params: v.idParams, body: v.tables.update }), a(tables.update));

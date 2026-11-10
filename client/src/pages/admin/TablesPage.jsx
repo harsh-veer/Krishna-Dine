@@ -97,6 +97,7 @@ export default function TablesPage() {
             >
               {ids.length ? 'Download selected (ZIP)' : 'Download all (ZIP)'}
             </Button>
+            <Button variant="secondary" icon={QrCode} onClick={async () => { try { setQrTable(await tableApi.sharedQr()); } catch (e) { toast.error(errorMessage(e)); } }} data-testid="shared-qr">One QR for all tables</Button>
             <Button icon={Plus} onClick={() => setEditing({})} data-testid="add-table">Add table</Button>
           </>
         }
@@ -206,6 +207,7 @@ function TableModal({ table, onClose, onSaved }) {
 function QrModal({ table, onClose, onRegenerate }) {
   const [busy, setBusy] = useState(false);
   const [full, setFull] = useState(false);
+  const shared = table.id === 'shared';
   const canShare = typeof navigator !== 'undefined' && !!navigator.share;
   const copy = async () => {
     try {
@@ -215,10 +217,10 @@ function QrModal({ table, onClose, onRegenerate }) {
       toast.error('Could not copy. Long-press the link to copy it.');
     }
   };
-  const share = () => navigator.share({ title: `Krishna Dine, Table ${table.tableNumber}`, url: table.qrCodeUrl }).catch(() => {});
+  const share = () => navigator.share({ title: shared ? "Krishna Dine menu" : `Krishna Dine, Table ${table.tableNumber}`, url: table.qrCodeUrl }).catch(() => {});
   return (
     <>
-      <Modal open onClose={onClose} title={`Table ${table.tableNumber} QR code`} description="Customers scan this to open the menu for this table. Tap the code to try it." size="md">
+      <Modal open onClose={onClose} title={shared ? 'One QR code for all tables' : `Table ${table.tableNumber} QR code`} description={shared ? 'Customers scan this, then pick their table number from the list. Tap the code to try it.' : 'Customers scan this to open the menu for this table. Tap the code to try it.'} size="md">
         <div className="text-center">
           <QrPoster table={table} className="max-w-[300px]" />
           {!table.isActive && <p className="mt-3 text-sm font-semibold text-red-600">This table is disabled. The code will not accept orders.</p>}
@@ -227,7 +229,7 @@ function QrModal({ table, onClose, onRegenerate }) {
           </a>
           <div className="mt-5 grid grid-cols-2 gap-2">
             <Button icon={Download} loading={busy} onClick={async () => { setBusy(true); try { await downloadQrCard(table); } finally { setBusy(false); } }} data-testid="download-qr">Download PNG</Button>
-            <Link to={`/admin/tables/print?ids=${table.id}`} target="_blank"><Button variant="secondary" icon={Printer} className="w-full">Print</Button></Link>
+            {shared ? <a href={table.qrCodeUrl} target="_blank" rel="noreferrer"><Button variant="secondary" icon={ExternalLink} className="w-full">Try it</Button></a> : <Link to={`/admin/tables/print?ids=${table.id}`} target="_blank"><Button variant="secondary" icon={Printer} className="w-full">Print</Button></Link>}
             <Button variant="secondary" icon={Copy} onClick={copy} data-testid="copy-link">Copy link</Button>
             {canShare ? (
               <Button variant="secondary" icon={Share2} onClick={share}>Share</Button>
@@ -236,7 +238,8 @@ function QrModal({ table, onClose, onRegenerate }) {
             )}
           </div>
           {canShare && <Button variant="ghost" size="sm" icon={Maximize2} className="mt-2" onClick={() => setFull(true)}>Show full screen</Button>}
-          <Button variant="ghost" size="sm" icon={RefreshCw} className="mt-2" onClick={onRegenerate}>Regenerate code</Button>
+          {!shared && <Button variant="ghost" size="sm" icon={RefreshCw} className="mt-2" onClick={onRegenerate}>Regenerate code</Button>}
+          {shared && <p className="mt-3 text-xs text-brand-900/55">Anyone with this code can pick any table, so staff should still check orders. For stricter control use each table's own QR code.</p>}
         </div>
       </Modal>
       {full && (
