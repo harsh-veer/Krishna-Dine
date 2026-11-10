@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.vercel.krishna_dine.twa",
+    "sha256_cert_fingerprints": ["FC:2D:A5:D8:15:40:D4:B0:0A:A6:20:20:A9:09:5A:0B:D9:4F:5F:E1:9C:78:5B:39:B5:BE:18:F4:3A:D4:74:AF"]
+  }
+}]
