@@ -12,7 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import { formatDateTime } from '../../utils/format';
 
 const password = z.string().min(8, 'At least 8 characters').max(72).refine((v) => /[A-Za-z]/.test(v) && /\d/.test(v), 'Use letters and numbers');
-const createSchema = z.object({ name: z.string().trim().min(1, 'Name is required'), email: z.string().trim().email('Enter a valid email'), role: z.enum(['admin', 'kitchen']), password });
+const createSchema = z.object({ name: z.string().trim().min(1, 'Name is required'), email: z.string().trim().email('Enter a valid email'), role: z.enum(['admin', 'kitchen', 'waiter']), password });
 
 export default function StaffPage() {
   const { user: me } = useAuth();
@@ -37,7 +37,7 @@ export default function StaffPage() {
 
   return (
     <>
-      <PageHeader title="Staff" description="Admins manage everything. Kitchen staff can only use the kitchen display and mark items sold out." actions={<Button icon={UserPlus} onClick={() => setAdding(true)}>Add staff</Button>} />
+      <PageHeader title="Staff" description="Admins manage everything. Kitchen staff use the kitchen display. Waiters take, edit and manage orders but cannot see bills, payments, reports or sales totals." actions={<Button icon={UserPlus} onClick={() => setAdding(true)}>Add staff</Button>} />
       <div className="mb-4 grid gap-3 sm:grid-cols-2">
         <div className="card flex gap-3 p-4 text-sm"><ShieldCheck className="h-5 w-5 shrink-0 text-brand-700" /><div><strong>Admin:</strong> dashboard, menu, tables and QR codes, orders, billing and payments, reports, staff and settings.</div></div>
         <div className="card flex gap-3 p-4 text-sm"><ChefHat className="h-5 w-5 shrink-0 text-gold-600" /><div><strong>Kitchen:</strong> live order board, accept / prepare / ready / served, cancel with reason, item availability. Enforced on the server.</div></div>
@@ -64,6 +64,7 @@ export default function StaffPage() {
                       <Select value={u.role} disabled={self} onChange={(e) => update(u, { role: e.target.value })} className="w-32 py-1.5" aria-label="Role">
                         <option value="admin">Admin</option>
                         <option value="kitchen">Kitchen</option>
+                        <option value="waiter">Waiter</option>
                       </Select>
                     </td>
                     <td className="px-3 py-3"><Toggle checked={u.isActive} disabled={self} onChange={(v) => update(u, { isActive: v })} label="Active" size="sm" /></td>
@@ -118,7 +119,7 @@ function AddStaffModal({ onClose, onSaved }) {
       <form onSubmit={onSubmit} className="space-y-4">
         <Field label="Full name" error={formState.errors.name?.message}><Input {...register('name')} /></Field>
         <Field label="Email (used to sign in)" error={formState.errors.email?.message}><Input type="email" {...register('email')} /></Field>
-        <Field label="Role"><Select {...register('role')}><option value="kitchen">Kitchen staff</option><option value="admin">Admin</option></Select></Field>
+        <Field label="Role"><Select {...register('role')}><option value="kitchen">Kitchen staff</option><option value="waiter">Waiter</option><option value="admin">Admin</option></Select></Field>
         <Field label="Temporary password" error={formState.errors.password?.message} hint="They must change it after the first login"><Input type="text" autoComplete="off" {...register('password')} /></Field>
       </form>
     </Modal>

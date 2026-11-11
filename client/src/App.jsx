@@ -6,6 +6,9 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { FullPageSpinner } from './components/ui';
 import MenuPage from './pages/customer/MenuPage';
+import WaiterOrdersPage from './pages/waiter/WaiterOrdersPage';
+import WaiterOrderPage from './pages/waiter/WaiterOrderPage';
+import WaiterEditor from './pages/waiter/WaiterEditor';
 import TablePickerPage from './pages/customer/TablePickerPage';
 import OrderStatusPage from './pages/customer/OrderStatusPage';
 import LandingPage from './pages/customer/LandingPage';
@@ -47,6 +50,13 @@ export default function App() {
 
             <Route element={<ProtectedRoute roles={['admin', 'kitchen']} />}>
               <Route path="/kitchen" element={<KitchenPage />} />
+            </Route>
+
+            <Route element={<ProtectedRoute roles={['waiter']} />}>
+              <Route path="/waiter" element={<WaiterOrdersPage />} />
+              <Route path="/waiter/orders/new" element={<WaiterEditor mode="new" />} />
+              <Route path="/waiter/orders/:id" element={<WaiterOrderPage />} />
+              <Route path="/waiter/orders/:id/edit" element={<WaiterEditor mode="edit" />} />
             </Route>
 
             <Route element={<ProtectedRoute roles={['admin']} />}>

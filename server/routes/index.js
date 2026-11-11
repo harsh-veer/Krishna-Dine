@@ -21,6 +21,9 @@ const push = require('../controllers/pushController');
 
 const ADMIN = authorize('admin');
 const STAFF = authorize('admin', 'kitchen');
+// Waiters take and manage orders but never see billing, payments, reports or settings.
+const ORDER_STAFF = authorize('admin', 'waiter');
+const ALL_STAFF = authorize('admin', 'kitchen', 'waiter');
 
 const router = express.Router();
 
@@ -43,7 +46,7 @@ router.get('/public/settings', publicLimiter, a(settings.publicSettings));
 // ---- Tables (admin)
 const tableRouter = express.Router();
 tableRouter.use(authenticate);
-tableRouter.get('/', STAFF, a(tables.list));
+tableRouter.get('/', ALL_STAFF, a(tables.list));
 tableRouter.post('/', ADMIN, validate({ body: v.tables.create }), a(tables.create));
 tableRouter.get('/qr/shared', ADMIN, a(tables.sharedQr));
 tableRouter.get('/qr/bulk', ADMIN, validate({ query: v.tables.bulkQuery }), a(tables.bulkQr));
@@ -72,15 +75,15 @@ router.delete('/categories/:id', authenticate, ADMIN, validate({ params: v.idPar
 
 // ---- Orders
 router.post('/orders', orderLimiter, validate({ body: v.orders.create }), a(orders.create));
-router.post('/orders/admin', authenticate, ADMIN, validate({ body: v.orders.adminCreate }), a(orders.createByStaff));
-router.get('/orders', authenticate, STAFF, validate({ query: v.orders.listQuery }), a(orders.list));
+router.post('/orders/admin', authenticate, ORDER_STAFF, validate({ body: v.orders.adminCreate }), a(orders.createByStaff));
+router.get('/orders', authenticate, ALL_STAFF, validate({ query: v.orders.listQuery }), a(orders.list));
 router.post('/orders/bulk-delete', authenticate, ADMIN, validate({ body: v.orders.bulkDelete }), a(orders.bulkDelete));
 router.post('/orders/purge-old', authenticate, ADMIN, validate({ body: v.orders.purge }), a(orders.purgeOld));
-router.get('/orders/table/:tableId', authenticate, STAFF, validate({ params: v.orders.tableParams, query: v.orders.tableQuery }), a(orders.byTable));
+router.get('/orders/table/:tableId', authenticate, ALL_STAFF, validate({ params: v.orders.tableParams, query: v.orders.tableQuery }), a(orders.byTable));
 router.get('/orders/:id', publicLimiter, optionalAuth, validate({ params: v.idParams, query: v.orders.trackQuery }), a(orders.get));
 router.post('/orders/:id/feedback', publicLimiter, validate({ params: v.idParams, body: v.orders.feedback }), a(orders.feedback));
-router.patch('/orders/:id', authenticate, ADMIN, validate({ params: v.idParams, body: v.orders.edit }), a(orders.edit));
-router.patch('/orders/:id/status', authenticate, STAFF, validate({ params: v.idParams, body: v.orders.status }), a(orders.updateStatus));
+router.patch('/orders/:id', authenticate, ORDER_STAFF, validate({ params: v.idParams, body: v.orders.edit }), a(orders.edit));
+router.patch('/orders/:id/status', authenticate, ALL_STAFF, validate({ params: v.idParams, body: v.orders.status }), a(orders.updateStatus));
 
 router.delete('/orders/:id', authenticate, ADMIN, validate({ params: v.idParams }), a(orders.remove));
 

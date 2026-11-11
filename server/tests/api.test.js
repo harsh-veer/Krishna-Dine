@@ -480,3 +480,29 @@ test('staff management is owner-only: another admin cannot change staff access',
   assert.equal(me.data.data.user.isOwner, true);
   assert.equal((await api('DELETE', `/users/${created.data.data.id}`, { token: adminToken })).status, 200);
 });
+
+test('waiter: can create, edit and manage orders; cannot bill, see reports, settings or staff', async () => {
+  const mk = await api('POST', '/users', { token: adminToken, body: { name: 'Waiter One', email: 'waiter@krishnadine.local', role: 'waiter', password: 'Waiter@12345' } });
+  assert.equal(mk.status, 201, JSON.stringify(mk.data));
+  const login = await api('POST', '/auth/login', { body: { email: 'waiter@krishnadine.local', password: 'Waiter@12345' } });
+  const ch = await api('POST', '/auth/change-password', { token: login.data.data.token, body: { currentPassword: 'Waiter@12345', newPassword: 'Waiter@12345x1' } });
+  const w = ch.data.data.token;
+
+  const tables = await api('GET', '/tables', { token: w });
+  assert.equal(tables.status, 200);
+  const t = tables.data.data.find((x) => x.isActive);
+  const menu = (await api('GET', '/menu')).data.data.items;
+  const item = menu.find((i) => !(i.sizes && i.sizes.length)) || menu[0];
+  const created = await api('POST', '/orders/admin', { token: w, body: { tableId: t.id, customerName: 'Walk-in', items: [{ menuItemId: item.id, quantity: 1 }] } });
+  assert.equal(created.status, 201, JSON.stringify(created.data));
+  const id = created.data.data.id;
+  const edited = await api('PATCH', `/orders/${id}`, { token: w, body: { items: [{ menuItemId: item.id, quantity: 2 }] } });
+  assert.equal(edited.status, 200, JSON.stringify(edited.data));
+  assert.equal((await api('GET', '/orders', { token: w })).status, 200);
+  assert.equal((await api('GET', `/orders/${id}`, { token: w })).status, 200);
+  assert.equal((await api('PATCH', `/orders/${id}/status`, { token: w, body: { status: 'accepted' } })).status, 200);
+
+  for (const [m, p, body] of [['GET', '/reports/dashboard'], ['GET', '/reports/daily'], ['GET', `/orders/${id}/bill`], ['POST', `/orders/${id}/bill`, {}], ['POST', `/orders/${id}/payments`, { paymentMethod: 'cash' }], ['POST', `/orders/${id}/close`], ['DELETE', `/orders/${id}`], ['GET', '/settings'], ['GET', '/users'], ['GET', '/payments']]) {
+    assert.equal((await api(m, p, { token: w, body })).status, 403, `${m} ${p}`);
+  }
+});

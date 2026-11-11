@@ -1,6 +1,6 @@
 'use strict';
 
-const ROLES = Object.freeze({ ADMIN: 'admin', KITCHEN: 'kitchen' });
+const ROLES = Object.freeze({ ADMIN: 'admin', KITCHEN: 'kitchen', WAITER: 'waiter' });
 
 const ORDER_STATUS = Object.freeze({
   PENDING: 'pending',

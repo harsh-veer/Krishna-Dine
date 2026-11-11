@@ -329,3 +329,7 @@ It logs in as admin, creates Table 01, downloads its QR PNG and **decodes** it, 
 ## Owner-only staff management
 
 Only the account whose email matches `OWNER_EMAIL` (default `veerharsh919@gmail.com`) can open the Staff page or add, disable, change the role of, reset the password of, or delete staff. Other admins get a 403 and do not see the Staff menu item. Set the `OWNER_EMAIL` environment variable on the server to change the owner.
+
+## Waiter role
+
+Create a staff account with the **Waiter** role (owner only, on the Staff page). Waiters sign in to `/waiter`: they can create orders for a table, edit open orders, accept/advance/cancel orders and see the live order list. They cannot see bills, payments, reports, the dashboard, settings or staff, and the API refuses those routes with 403. The order list and order screens show items and status only, no prices or totals.

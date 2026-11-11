@@ -41,7 +41,7 @@ function initSocket(httpServer) {
     const { user } = socket.data;
     if (user) {
       socket.join(rooms.STAFF);
-      socket.join(user.role === 'admin' ? rooms.ADMIN : rooms.KITCHEN);
+      socket.join(user.role === 'admin' ? rooms.ADMIN : user.role === 'waiter' ? rooms.WAITER : rooms.KITCHEN);
     }
 
     // Customer: follow a specific order. Requires the secret tracking token returned at checkout.

@@ -70,4 +70,4 @@ export const useAuth = () => {
   return ctx;
 };
 
-export const homeFor = (user) => (user?.role === 'admin' ? '/admin' : '/kitchen');
+export const homeFor = (user) => (user?.role === 'admin' ? '/admin' : user?.role === 'waiter' ? '/waiter' : '/kitchen');

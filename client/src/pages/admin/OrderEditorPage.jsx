@@ -5,7 +5,8 @@ import { ArrowLeft, Minus, Plus, Search, Trash2 } from 'lucide-react';
 import { PageHeader } from '../../layouts/AdminLayout';
 import { Button, EmptyState, Field, Input, Modal, Select, Spinner, Textarea } from '../../components/ui';
 import VegMark from '../../components/VegMark';
-import { menuApi, orderApi, settingsApi, tableApi } from '../../services/endpoints';
+import { useAuth } from '../../context/AuthContext';
+import { menuApi, orderApi, publicApi, settingsApi, tableApi } from '../../services/endpoints';
 import { errorMessage } from '../../services/api';
 import { formatINR } from '../../utils/format';
 
@@ -29,6 +30,10 @@ function estimate(lines, serviceRate) {
 export default function OrderEditorPage({ mode }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const waiter = user?.role === 'waiter';
+  const detailPath = (oid) => (waiter ? `/waiter/orders/${oid}` : `/admin/orders/${oid}`);
+  const listPath = waiter ? '/waiter' : '/admin/orders';
   const editing = mode === 'edit';
   const [menu, setMenu] = useState(null);
   const [tables, setTables] = useState([]);
@@ -46,7 +51,8 @@ export default function OrderEditorPage({ mode }) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const jobs = [menuApi.list({}), settingsApi.get()];
+    // Waiters cannot read the admin settings; the public settings carry the service charge they need.
+    const jobs = [menuApi.list({}), waiter ? publicApi.settings().then((s) => ({ serviceChargeEnabled: s.serviceChargeRate > 0, serviceChargeRate: s.serviceChargeRate })) : settingsApi.get()];
     if (editing) jobs.push(orderApi.get(id));
     else jobs.push(tableApi.list());
     Promise.all(jobs)
@@ -65,7 +71,7 @@ export default function OrderEditorPage({ mode }) {
         }
       })
       .catch((e) => setError(errorMessage(e)));
-  }, [editing, id]);
+  }, [editing, id, waiter]);
 
   const items = useMemo(() => {
     if (!menu) return [];
@@ -102,7 +108,7 @@ export default function OrderEditorPage({ mode }) {
       const common = { customerName: customerName.trim() || (editing ? order.customerName : 'Walk-in'), customerPhone, specialInstructions: instructions };
       const saved = editing ? await orderApi.edit(id, { ...common, items: itemsBody }) : await orderApi.createByAdmin({ ...common, tableId, items: itemsBody });
       toast.success(editing ? 'Order updated' : `Order ${saved.orderNumber} placed`);
-      navigate(`/admin/orders/${saved.id}`);
+      navigate(detailPath(saved.id));
     } catch (e) {
       toast.error(errorMessage(e));
     } finally {
@@ -117,14 +123,14 @@ export default function OrderEditorPage({ mode }) {
       <EmptyState
         title="This order cannot be edited"
         message="Closed, cancelled and paid orders are locked so the bill stays correct."
-        action={<Link to={`/admin/orders/${id}`}><Button variant="secondary">Back to the order</Button></Link>}
+        action={<Link to={detailPath(id)}><Button variant="secondary">Back to the order</Button></Link>}
       />
     );
   }
 
   return (
     <>
-      <Link to={editing ? `/admin/orders/${id}` : '/admin/orders'} className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:underline">
+      <Link to={editing ? detailPath(id) : listPath} className="mb-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:underline">
         <ArrowLeft className="h-4 w-4" /> {editing ? 'Back to the order' : 'All orders'}
       </Link>
       <PageHeader
