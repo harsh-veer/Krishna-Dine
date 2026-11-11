@@ -27,6 +27,8 @@ const env = {
   forcePasswordChange: process.env.FORCE_PASSWORD_CHANGE !== 'false',
   uploadMaxBytes: Number(process.env.UPLOAD_MAX_BYTES) || 2 * 1024 * 1024,
   timezoneOffsetMinutes: Number(process.env.TZ_OFFSET_MINUTES ?? 330), // IST = UTC+05:30
+  // Only this account may manage staff (create, change access, reset passwords, remove).
+  ownerEmail: String(process.env.OWNER_EMAIL || 'veerharsh919@gmail.com').trim().toLowerCase(),
   paymentGateway: process.env.PAYMENT_GATEWAY || 'none',
   razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
   razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || '',

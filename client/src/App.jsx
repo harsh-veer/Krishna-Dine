@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import { useAuth } from './context/AuthContext';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
@@ -25,6 +26,11 @@ const QrPrintPage = lazy(() => import('./pages/admin/QrPrintPage'));
 const StaffPage = lazy(() => import('./pages/admin/StaffPage'));
 const ReportsPage = lazy(() => import('./pages/admin/ReportsPage'));
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
+
+function OwnerOnly({ children }) {
+  const { user } = useAuth();
+  return user?.isOwner ? children : <Navigate to="/admin" replace />;
+}
 
 export default function App() {
   return (
@@ -55,7 +61,7 @@ export default function App() {
                 <Route path="menu" element={<AdminMenuPage />} />
                 <Route path="tables" element={<TablesPage />} />
                 <Route path="reports" element={<ReportsPage />} />
-                <Route path="staff" element={<StaffPage />} />
+                <Route path="staff" element={<OwnerOnly><StaffPage /></OwnerOnly>} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
             </Route>

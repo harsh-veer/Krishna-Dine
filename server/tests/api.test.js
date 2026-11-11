@@ -7,6 +7,7 @@ process.env.NODE_ENV = 'test';
 process.env.MONGODB_URI = process.env.MONGODB_URI_TEST || 'mongodb://127.0.0.1:27017/krishna_dine_test';
 process.env.FORCE_PASSWORD_CHANGE = 'true';
 process.env.RATE_LIMIT_DISABLED = 'true';
+process.env.OWNER_EMAIL = 'admin@krishnadine.local';
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
@@ -462,4 +463,20 @@ test('shared QR: customers list active tables, pick one and get its ordering tok
   assert.equal(shared.status, 200);
   assert.match(shared.data.data.qrCodeUrl, /\/menu$/);
   assert.match(shared.data.data.qrDataUrl, /^data:image\/png/);
+});
+
+test('staff management is owner-only: another admin cannot change staff access', async () => {
+  const created = await api('POST', '/users', { token: adminToken, body: { name: 'Second Admin', email: 'second@krishnadine.local', role: 'admin', password: 'Second@12345' } });
+  assert.equal(created.status, 201, JSON.stringify(created.data));
+  assert.equal(created.data.data.isOwner, false);
+  const login = await api('POST', '/auth/login', { body: { email: 'second@krishnadine.local', password: 'Second@12345' } });
+  const change = await api('POST', '/auth/change-password', { token: login.data.data.token, body: { currentPassword: 'Second@12345', newPassword: 'Second@12345x1' } });
+  const second = change.data.data.token;
+  for (const [m, p, body] of [['GET', '/users'], ['POST', '/users', { name: 'X', email: 'x@x.local', role: 'kitchen', password: 'Xx@12345678' }], ['PUT', `/users/${created.data.data.id}`, { role: 'kitchen' }], ['DELETE', `/users/${created.data.data.id}`]]) {
+    assert.equal((await api(m, p, { token: second, body })).status, 403, `${m} ${p}`);
+  }
+  assert.equal((await api('GET', '/reports/daily', { token: second })).status, 200, 'still a normal admin elsewhere');
+  const me = await api('GET', '/auth/me', { token: adminToken });
+  assert.equal(me.data.data.user.isOwner, true);
+  assert.equal((await api('DELETE', `/users/${created.data.data.id}`, { token: adminToken })).status, 200);
 });

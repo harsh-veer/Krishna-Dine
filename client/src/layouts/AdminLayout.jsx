@@ -10,7 +10,7 @@ const NAV = [
   { to: '/admin/menu', label: 'Menu', icon: UtensilsCrossed },
   { to: '/admin/tables', label: 'Tables & QR', icon: QrCode },
   { to: '/admin/reports', label: 'Reports', icon: BarChart3 },
-  { to: '/admin/staff', label: 'Staff', icon: Users },
+  { to: '/admin/staff', label: 'Staff', icon: Users, ownerOnly: true },
   { to: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -22,7 +22,7 @@ function Sidebar({ onNavigate }) {
         <Logo light />
       </div>
       <nav className="flex-1 space-y-1 px-3">
-        {NAV.map((n) => (
+        {NAV.filter((n) => !n.ownerOnly || user?.isOwner).map((n) => (
           <NavLink
             key={n.to}
             to={n.to}

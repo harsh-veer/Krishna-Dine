@@ -2,7 +2,7 @@
 const express = require('express');
 const a = require('../utils/asyncHandler');
 const validate = require('../middleware/validate');
-const { authenticate, optionalAuth, authorize } = require('../middleware/auth');
+const { authenticate, optionalAuth, authorize, ownerOnly } = require('../middleware/auth');
 const { loginLimiter, orderLimiter, publicLimiter } = require('../middleware/rateLimiters');
 const { imageUpload } = require('../middleware/upload');
 const v = require('../validators');
@@ -103,11 +103,11 @@ router.get('/reports/weekly', authenticate, ADMIN, validate({ query: v.reports.w
 router.get('/reports/monthly', authenticate, ADMIN, validate({ query: v.reports.monthly }), a(reports.monthly));
 
 // ---- Staff management (admin)
-router.get('/users', authenticate, ADMIN, a(users.list));
-router.post('/users', authenticate, ADMIN, validate({ body: v.users.create }), a(users.create));
-router.put('/users/:id', authenticate, ADMIN, validate({ params: v.idParams, body: v.users.update }), a(users.update));
-router.post('/users/:id/reset-password', authenticate, ADMIN, validate({ params: v.idParams, body: v.users.resetPassword }), a(users.resetPassword));
-router.delete('/users/:id', authenticate, ADMIN, validate({ params: v.idParams }), a(users.remove));
+router.get('/users', authenticate, ADMIN, ownerOnly, a(users.list));
+router.post('/users', authenticate, ADMIN, ownerOnly, validate({ body: v.users.create }), a(users.create));
+router.put('/users/:id', authenticate, ADMIN, ownerOnly, validate({ params: v.idParams, body: v.users.update }), a(users.update));
+router.post('/users/:id/reset-password', authenticate, ADMIN, ownerOnly, validate({ params: v.idParams, body: v.users.resetPassword }), a(users.resetPassword));
+router.delete('/users/:id', authenticate, ADMIN, ownerOnly, validate({ params: v.idParams }), a(users.remove));
 
 // ---- Settings (admin)
 router.get('/settings', authenticate, ADMIN, a(settings.get));

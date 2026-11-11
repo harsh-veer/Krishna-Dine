@@ -37,6 +37,7 @@ userSchema.methods.toSafeJSON = function toSafeJSON() {
     name: this.name,
     email: this.email,
     role: this.role,
+    isOwner: this.email === require('../config/env').env.ownerEmail,
     isActive: this.isActive,
     mustChangePassword: this.mustChangePassword,
     lastLoginAt: this.lastLoginAt,

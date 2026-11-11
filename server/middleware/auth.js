@@ -72,4 +72,11 @@ function authorize(...roles) {
   };
 }
 
-module.exports = { signToken, userFromToken, authenticate, optionalAuth, authorize, COOKIE_NAME };
+/** Only the owner account (OWNER_EMAIL) may manage staff access. */
+function ownerOnly(req, _res, next) {
+  if (!req.user) return next(ApiError.unauthorized());
+  if (req.user.email !== env.ownerEmail) return next(ApiError.forbidden('Only the owner can manage staff access'));
+  return next();
+}
+
+module.exports = { ownerOnly, signToken, userFromToken, authenticate, optionalAuth, authorize, COOKIE_NAME };
