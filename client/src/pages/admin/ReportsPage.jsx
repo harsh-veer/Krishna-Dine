@@ -19,9 +19,11 @@ export default function ReportsPage() {
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
+    let stale = false;
     setReport(null);
     const p = type === 'daily' ? reportApi.daily(date) : type === 'weekly' ? reportApi.weekly(date) : reportApi.monthly(month);
-    p.then(setReport).catch((e) => toast.error(errorMessage(e)));
+    p.then((r) => { if (!stale) setReport(r); }).catch((e) => { if (!stale) toast.error(errorMessage(e)); });
+    return () => { stale = true; };
   }, [type, date, month]);
 
   const exportCsv = async () => {
@@ -36,12 +38,14 @@ export default function ReportsPage() {
     }
   };
 
-  const s = report?.summary;
-  const chartData = report ? (type === 'daily' ? report.hourly.filter((h) => h.hour >= 6 || h.orders > 0) : report.daily) : [];
+  // Only show a report that belongs to the selected tab (the previous tab's data must never be drawn with the new layout).
+  const current = report && report.type === type ? report : null;
+  const s = current?.summary;
+  const chartData = current ? (type === 'daily' ? (current.hourly || []).filter((h) => h.hour >= 6 || h.orders > 0) : current.daily || []) : [];
 
   return (
     <>
-      <PageHeader title="Reports" description="Sales, orders and popular dishes. No GST is charged; cancelled orders are excluded from sales." actions={<Button icon={FileDown} onClick={exportCsv} loading={exporting} disabled={!report} data-testid="export-csv">Export CSV</Button>} />
+      <PageHeader title="Reports" description="Sales, orders and popular dishes. No GST is charged; cancelled orders are excluded from sales." actions={<Button icon={FileDown} onClick={exportCsv} loading={exporting} disabled={!current} data-testid="export-csv">Export CSV</Button>} />
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <Tabs value={type} onChange={setType} tabs={[{ value: 'daily', label: 'Daily' }, { value: 'weekly', label: 'Weekly' }, { value: 'monthly', label: 'Monthly' }]} />
         {type === 'monthly' ? (
@@ -52,10 +56,10 @@ export default function ReportsPage() {
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-auto" />
           </label>
         )}
-        {report && <span className="text-sm text-brand-900/50">{report.period.label}</span>}
+        {current && <span className="text-sm text-brand-900/50">{current.period.label}</span>}
       </div>
 
-      {!report ? (
+      {!current ? (
         <Spinner />
       ) : (
         <>
@@ -74,7 +78,7 @@ export default function ReportsPage() {
             <div className="card p-5">
               <h2 className="mb-4 font-bold">Payments collected</h2>
               <ul className="space-y-3">
-                {report.paymentMethods.map((m) => (
+                {current.paymentMethods.map((m) => (
                   <li key={m.method} className="flex items-center justify-between text-sm">
                     <span className="font-semibold">{PAYMENT_LABEL[m.method]}</span>
                     <span className="tabular-nums text-brand-900/70">{m.orders} · <span className="font-bold text-brand-950">{formatINR(m.amount)}</span></span>
@@ -85,7 +89,7 @@ export default function ReportsPage() {
           </div>
           <div className="card mt-6 overflow-x-auto">
             <div className="px-5 py-4 font-bold">Popular menu items</div>
-            {report.topItems.length === 0 ? (
+            {current.topItems.length === 0 ? (
               <EmptyState title="No items sold in this period" className="py-8" />
             ) : (
               <table className="w-full text-sm">
@@ -93,7 +97,7 @@ export default function ReportsPage() {
                   <tr><th className="px-5 py-2.5">#</th><th className="px-3 py-2.5">Item</th><th className="px-3 py-2.5 text-right">Quantity</th><th className="px-5 py-2.5 text-right">Sales</th></tr>
                 </thead>
                 <tbody className="divide-y divide-cream-200">
-                  {report.topItems.map((t, i) => (
+                  {current.topItems.map((t, i) => (
                     <tr key={t.menuItemId}><td className="px-5 py-2.5 text-brand-900/50">{i + 1}</td><td className="px-3 py-2.5 font-semibold">{t.name}</td><td className="px-3 py-2.5 text-right tabular-nums">{t.quantity}</td><td className="px-5 py-2.5 text-right tabular-nums">{formatINR(t.revenue)}</td></tr>
                   ))}
                 </tbody>
@@ -108,7 +112,7 @@ export default function ReportsPage() {
                   <tr><th className="px-5 py-2.5">Date</th><th className="px-3 py-2.5 text-right">Orders</th><th className="px-3 py-2.5 text-right">Cancelled</th><th className="px-5 py-2.5 text-right">Sales</th></tr>
                 </thead>
                 <tbody className="divide-y divide-cream-200">
-                  {report.daily.map((d) => (
+                  {current.daily.map((d) => (
                     <tr key={d.date}><td className="px-5 py-2.5">{dayShort(d.date)}</td><td className="px-3 py-2.5 text-right tabular-nums">{d.orders}</td><td className="px-3 py-2.5 text-right tabular-nums">{d.cancelled}</td><td className="px-5 py-2.5 text-right font-semibold tabular-nums">{formatINR(d.revenue)}</td></tr>
                   ))}
                 </tbody>
